@@ -109,3 +109,19 @@ execution, access to unowned objects and local-state exposure, and include the
 required policy tests and ID scoping. Unsafe local effects must be redesigned.
 Never allowlist terminal spawn/respawn without live verification that it executes
 on the remote host. An allowlist addition without this analysis blocks review.
+
+## Fork Treelab
+
+This checkout is Treelab, a private fork of cmux (`craftwith-ai/treelab-app`). This section wins over the rules above.
+
+Interface : `Sources/` `Packages/macOS/` `Resources/` `Assets.xcassets/` `CLI/` · screens : 1280×800, 1728×1117
+
+- Build only with `scripts/treelab/build.sh` (Release arm64, `sh.treelab.app`, ad hoc signature, own DerivedData), then
+  `scripts/treelab/check-identity.sh`. Never open the project in Xcode: Xcode 27 rewrites it; `scripts/check-pbxproj.sh` stays green.
+- Name, bundle id, socket, folders and URL scheme come from `TreelabBranding` (CmuxSettings); never write them elsewhere.
+- The user's cmux (`com.cmuxterm.app`) runs beside Treelab: strip `CMUX_*` from the environment before any command aimed
+  at Treelab, and never touch its socket, folders or CLI links.
+- Not applicable here: fleet builds and cmuxterm-hq links, `dev-build`/`full-ci` labels, `gh-merge-green`, CLA Assistant,
+  upstream PR search and crediting, `cmux notify`. GitHub Actions are off: never edit `.github/workflows/`.
+- Pull requests target `craftwith-ai/treelab-app`, never `manaflow-ai/cmux`. Keep `CMUX_*` variables, the internal CLI and
+  module names unchanged so upstream merges stay cheap.
