@@ -4378,6 +4378,7 @@
 		E30760000000000000000002 /* TmuxWorkspacePaneOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E30760000000000000000001 /* TmuxWorkspacePaneOverlayView.swift */; };
 		C01E00020000000000000001 /* TokenTheme+AppKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01E00020000000000000002 /* TokenTheme+AppKit.swift */; };
 		D3284001A1B2C3D4E5F60718 /* TraditionalChineseIMENumpadRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3284002A1B2C3D4E5F60718 /* TraditionalChineseIMENumpadRegressionTests.swift */; };
+		F3D022B5E558B2D459B0AF17 /* TreelabCLISocketPathResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9FC9D7AC7DC69DD12470016 /* TreelabCLISocketPathResolverTests.swift */; };
 		468100000000000000000003 /* TypingHotPathRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 468100000000000000000004 /* TypingHotPathRegressionTests.swift */; };
 		D9A1B2C3D4E5000000000001 /* UITestDiagnosticsWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9A1B2C3D4E5000000000002 /* UITestDiagnosticsWriter.swift */; };
 		234457BD526EDFF5A1AA558C /* UITestFixtureTeamsAuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6B1A593C13D2BAEE34B912 /* UITestFixtureTeamsAuthClient.swift */; };
@@ -9058,6 +9059,7 @@
 		E30760000000000000000001 /* TmuxWorkspacePaneOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TmuxWorkspacePaneOverlayView.swift; sourceTree = "<group>"; };
 		C01E00020000000000000002 /* TokenTheme+AppKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Panels/TokenTheme+AppKit.swift"; sourceTree = "<group>"; };
 		D3284002A1B2C3D4E5F60718 /* TraditionalChineseIMENumpadRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TraditionalChineseIMENumpadRegressionTests.swift; sourceTree = "<group>"; };
+		D9FC9D7AC7DC69DD12470016 /* TreelabCLISocketPathResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TreelabCLISocketPathResolverTests.swift"; sourceTree = "<group>"; };
 		468100000000000000000004 /* TypingHotPathRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TypingHotPathRegressionTests.swift; sourceTree = "<group>"; };
 		D9A1B2C3D4E5000000000002 /* UITestDiagnosticsWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Debug/UITests/UITestDiagnosticsWriter.swift"; sourceTree = "<group>"; };
 		4F6B1A593C13D2BAEE34B912 /* UITestFixtureTeamsAuthClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestFixtureTeamsAuthClient.swift; sourceTree = "<group>"; };
@@ -14359,6 +14361,7 @@
 				C0C7EE23B232921D28CA56FD /* NotificationsPopoverDrawnRowsTests.swift */,
 				C6BD7F10185DA1F7C53B33A3 /* RemoteTmuxHostSocketNameTests.swift */,
 				9A7B328A8031722C38545CA7 /* SafariCookieImportTests.swift */,
+				D9FC9D7AC7DC69DD12470016 /* TreelabCLISocketPathResolverTests.swift */,
 			);
 			path = cmuxTests;
 			sourceTree = "<group>";
@@ -19645,6 +19648,7 @@
 				A10507000000000000000001 /* TitleUpdateAmplificationRegressionTests.swift in Sources */,
 				E30760060000000000000002 /* TmuxWorkspacePaneOverlayModelTests.swift in Sources */,
 				D3284001A1B2C3D4E5F60718 /* TraditionalChineseIMENumpadRegressionTests.swift in Sources */,
+				F3D022B5E558B2D459B0AF17 /* TreelabCLISocketPathResolverTests.swift in Sources */,
 				468100000000000000000003 /* TypingHotPathRegressionTests.swift in Sources */,
 				0C8A1FB23FA2673EDA2BE6A4 /* UITestFixtureTeamsAuthClientTests.swift in Sources */,
 				CF67431916D254CC833A68CB /* UITestSocketCommandScriptTests.swift in Sources */,
