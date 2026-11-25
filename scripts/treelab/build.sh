@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# Builds Treelab.app from this checkout: Release, arm64, bundle id sh.treelab.app,
+# empty Sparkle feed, ad hoc signature, its own DerivedData, no global CLI links.
+#
+# Usage: scripts/treelab/build.sh [--output <dir>] [--derived-data <dir>]
+#   --output        where Treelab.app is written (default: build/treelab)
+#   --derived-data  Xcode DerivedData for this build (default: build/treelab/DerivedData)
+#
+# The build runs in a scrubbed environment: no CMUX_* or GHOSTTY_* variable inherited
+# from the terminal (often the user's own cmux) reaches xcodebuild or the build phases.
+# Prints "App path: <path>" on success; check it with scripts/treelab/check-identity.sh.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+OUTPUT_DIR="$ROOT/build/treelab"
+DERIVED_DATA=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --output) OUTPUT_DIR="${2:?--output needs a value}"; shift 2 ;;
+    --derived-data) DERIVED_DATA="${2:?--derived-data needs a value}"; shift 2 ;;
+    -h|--help) sed -n '2,11p' "$0"; exit 0 ;;
+    *) echo "error: unknown option $1" >&2; exit 2 ;;
+  esac
+done
+DERIVED_DATA="${DERIVED_DATA:-$OUTPUT_DIR/DerivedData}"
+
+APP_NAME="Treelab"
+BUNDLE_ID="sh.treelab.app"
+URL_SCHEME="treelab"
+UPSTREAM_BUNDLE_ID="com.cmuxterm.app"
+
+cd "$ROOT"
+
+# One environment for every tool below: the user's PATH and home, nothing from cmux.
+RUSTUP_BIN="$(brew --prefix rustup 2>/dev/null || echo /opt/homebrew/opt/rustup)/bin"
+# Ghostty pins Zig by major.minor (ghostty/build.zig.zon); Homebrew's plain `zig` is often newer.
+# shellcheck source=../ghostty-zig-version.sh
+source "$ROOT/scripts/ghostty-zig-version.sh"
+ZIG_MINOR="$(ghostty_minimum_zig_version "$ROOT" | cut -d. -f1,2)"
+ZIG_BIN="$(brew --prefix "zig@$ZIG_MINOR" 2>/dev/null || true)/bin"
+[[ -x "$ZIG_BIN/zig" ]] || { echo "error: Zig $ZIG_MINOR missing (brew install zig@$ZIG_MINOR)" >&2; exit 1; }
+CLEAN_ENV=(
+  env -i
+  HOME="$HOME" USER="${USER:-$(id -un)}" LOGNAME="${LOGNAME:-$(id -un)}"
+  TMPDIR="${TMPDIR:-/tmp}" LANG="${LANG:-en_US.UTF-8}" TERM="${TERM:-dumb}"
+  PATH="$ZIG_BIN:$HOME/.cargo/bin:$RUSTUP_BIN:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+  CMUX_WIREGUARD_GO_REQUIRE="${CMUX_WIREGUARD_GO_REQUIRE:-0}"
+  CMUX_GHOSTTYKIT_CACHE_DIR="$HOME/.cache/treelab/ghosttykit"
+)
+[[ -n "${DEVELOPER_DIR:-}" ]] && CLEAN_ENV+=(DEVELOPER_DIR="$DEVELOPER_DIR")
+run() { "${CLEAN_ENV[@]}" "$@"; }
+
+# Global CLI links must stay exactly as they were (C2): record them before the build.
+links_state() {
+  # shellcheck disable=SC2012
+  { ls -la "$HOME"/.local/bin/cmux* /tmp/cmux-cli /tmp/cmux-last-cli-path 2>/dev/null || true; } | sed 's/  */ /g'
+}
+LINKS_BEFORE="$(links_state)"
+
+echo "==> Checking tools"
+run xcrun clang --version >/dev/null || { echo "error: Xcode cannot run (license: sudo xcodebuild -license accept)" >&2; exit 1; }
+run xcrun metal --version >/dev/null 2>&1 || { echo "error: Metal toolchain missing (xcodebuild -downloadComponent MetalToolchain)" >&2; exit 1; }
+run cargo --version >/dev/null || { echo "error: cargo not found (rustup default stable)" >&2; exit 1; }
+DIFF_RUST_TOOLCHAIN="$(awk -F '"' '/^[[:space:]]*channel[[:space:]]*=/{print $2; exit}' Native/DiffSidecar/rust-toolchain.toml)"
+run rustup toolchain install "$DIFF_RUST_TOOLCHAIN" --profile minimal --component clippy,rustfmt >/dev/null
+run rustup target add --toolchain "$DIFF_RUST_TOOLCHAIN" aarch64-apple-darwin x86_64-apple-darwin >/dev/null
+
+echo "==> Submodules (ghostty, vendor/bonsplit)"
+run git submodule update --init ghostty vendor/bonsplit
+
+echo "==> GhosttyKit (pinned prebuilt, Zig build as fallback)"
+run "$ROOT/scripts/ensure-ghosttykit.sh"
+
+echo "==> xcodebuild Release arm64 -> $DERIVED_DATA"
+run xcodebuild \
+  -project cmux.xcodeproj \
+  -scheme cmux \
+  -configuration Release \
+  -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath "$DERIVED_DATA" \
+  ARCHS=arm64 \
+  ONLY_ACTIVE_ARCH=YES \
+  CODE_SIGN_IDENTITY=- \
+  DEVELOPMENT_TEAM= \
+  CMUX_AUTH_CALLBACK_SCHEME="$URL_SCHEME" \
+  build
+
+BUILT_APP="$DERIVED_DATA/Build/Products/Release/cmux.app"
+[[ -d "$BUILT_APP" ]] || { echo "error: $BUILT_APP not found" >&2; exit 1; }
+
+echo "==> Branding the bundle as $APP_NAME ($BUNDLE_ID)"
+mkdir -p "$OUTPUT_DIR"
+APP="$OUTPUT_DIR/$APP_NAME.app"
+rm -rf "$APP"
+ditto "$BUILT_APP" "$APP"
+PLIST="$APP/Contents/Info.plist"
+pb() { /usr/libexec/PlistBuddy -c "$1" "$PLIST"; }
+set_string() { pb "Set :$1 $2" 2>/dev/null || pb "Add :$1 string $2"; }
+OLD_EXECUTABLE="$(pb 'Print :CFBundleExecutable')"
+mv "$APP/Contents/MacOS/$OLD_EXECUTABLE" "$APP/Contents/MacOS/$APP_NAME"
+set_string CFBundleExecutable "$APP_NAME"
+set_string CFBundleName "$APP_NAME"
+set_string CFBundleDisplayName "$APP_NAME"
+set_string CFBundleIdentifier "$BUNDLE_ID"
+# Empty update feed: Treelab never asks GitHub for cmux releases.
+plutil -replace SUFeedURL -string "" "$PLIST"
+plutil -replace SUEnableAutomaticChecks -bool NO "$PLIST"
+# URL types are named after the bundle id at build time.
+count="$(pb 'Print :CFBundleURLTypes' | grep -c '^    Dict {' || true)"
+for ((i = 0; i < count; i++)); do
+  name="$(pb "Print :CFBundleURLTypes:$i:CFBundleURLName" 2>/dev/null || true)"
+  [[ "$name" == "$UPSTREAM_BUNDLE_ID"* ]] && pb "Set :CFBundleURLTypes:$i:CFBundleURLName ${BUNDLE_ID}${name#"$UPSTREAM_BUNDLE_ID"}"
+done
+
+echo "==> Ad hoc signature"
+ENTITLEMENTS="$(mktemp "${TMPDIR:-/tmp}/treelab-entitlements.XXXXXX")"
+trap 'rm -f "$ENTITLEMENTS"' EXIT
+/usr/bin/codesign -d --entitlements :- "$BUILT_APP" 2>/dev/null > "$ENTITLEMENTS"
+# The keychain group follows the bundle id, so Treelab never shares cmux's items.
+sed -i '' "s/>${UPSTREAM_BUNDLE_ID//./\\.}</>${BUNDLE_ID}</g" "$ENTITLEMENTS"
+/usr/bin/codesign --force --sign - --timestamp=none --entitlements "$ENTITLEMENTS" "$APP"
+
+LINKS_AFTER="$(links_state)"
+if [[ "$LINKS_BEFORE" != "$LINKS_AFTER" ]]; then
+  echo "error: global CLI links changed during the build" >&2
+  diff <(echo "$LINKS_BEFORE") <(echo "$LINKS_AFTER") >&2 || true
+  exit 1
+fi
+
+echo "App path: $APP"
