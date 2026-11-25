@@ -1,3 +1,4 @@
+import CmuxFoundation
 public import Darwin
 public import Foundation
 
@@ -20,13 +21,17 @@ public struct SocketControlSettings {
     public static let launchTagEnvKey = "CMUX_TAG"
     /// Base bundle identifier shared by all debug builds.
     public static let baseDebugBundleIdentifier = "com.cmuxterm.app.debug"
-    private static let stableSocketFileName = "cmux.sock"
     /// Legacy stable socket path used before the Application Support location.
-    public static let legacyStableDefaultSocketPath = "/tmp/cmux.sock"
+    public static var legacyStableDefaultSocketPath: String { AppBranding.current.legacyTmpSocketPath }
 
     /// The stable build's default socket path (within ``CmuxStateDirectory``, falling back to `/tmp`).
     public static var stableDefaultSocketPath: String {
-        stableSocketFileURL()?.path ?? legacyStableDefaultSocketPath
+        stableSocketPath(branding: .current)
+    }
+
+    /// The stable socket path of `branding` (within its state directory, falling back to `/tmp`).
+    public static func stableSocketPath(branding: AppBranding) -> String {
+        stableSocketFileURL(branding: branding)?.path ?? branding.legacyTmpSocketPath
     }
 
     /// The result of probing the stable default socket path on disk.
@@ -339,12 +344,14 @@ public struct SocketControlSettings {
         guard let candidatePath = canonicalSocketPath(path) else {
             return true
         }
-        return [
-            stableDefaultSocketPath,
-            userScopedStableSocketPath(currentUserID: currentUserID),
-            legacyStableDefaultSocketPath,
-            legacyUserScopedStableSocketPath(currentUserID: currentUserID),
-        ].contains { stablePath in
+        // Another brand also reserves cmux's stable sockets: it never takes them over.
+        let brands: [AppBranding] = AppBranding.current == .cmux ? [.cmux] : [.current, .cmux]
+        return brands.flatMap { branding in [
+            stableSocketPath(branding: branding),
+            userScopedStableSocketPath(branding: branding, currentUserID: currentUserID),
+            branding.legacyTmpSocketPath,
+            branding.legacyUserScopedTmpSocketPath(currentUserID: currentUserID),
+        ] }.contains { stablePath in
             canonicalSocketPath(stablePath)
                 .map { socketPathStringsMatch(candidatePath, $0) }
                 ?? pathsMatch(path, stablePath)
@@ -353,28 +360,34 @@ public struct SocketControlSettings {
 
     /// The per-user stable socket path (`cmux-<uid>.sock` in ``CmuxStateDirectory``, `/tmp` fallback).
     public static func userScopedStableSocketPath(currentUserID: uid_t = getuid()) -> String {
-        stableSocketDirectoryURL()?
-            .appendingPathComponent("cmux-\(currentUserID).sock", isDirectory: false)
-            .path ?? "/tmp/cmux-\(currentUserID).sock"
+        userScopedStableSocketPath(branding: .current, currentUserID: currentUserID)
+    }
+
+    private static func userScopedStableSocketPath(branding: AppBranding, currentUserID: uid_t) -> String {
+        stableSocketDirectoryURL(branding: branding)?
+            .appendingPathComponent(branding.userScopedSocketFileName(currentUserID: currentUserID), isDirectory: false)
+            .path ?? branding.legacyUserScopedTmpSocketPath(currentUserID: currentUserID)
     }
 
     /// The legacy `/tmp` per-user stable socket path.
     public static func legacyUserScopedStableSocketPath(currentUserID: uid_t = getuid()) -> String {
-        "/tmp/cmux-\(currentUserID).sock"
+        AppBranding.current.legacyUserScopedTmpSocketPath(currentUserID: currentUserID)
     }
 
     /// The stable default socket path, falling back to the per-user path when the shared one is taken.
     public static func resolvedStableDefaultSocketPath(
+        branding: AppBranding = .current,
         currentUserID: uid_t = getuid(),
         probeStableDefaultPathEntry: (String) -> StableDefaultSocketPathEntry = inspectStableDefaultSocketPathEntry
     ) -> String {
-        switch probeStableDefaultPathEntry(stableDefaultSocketPath) {
+        let stablePath = stableSocketPath(branding: branding)
+        switch probeStableDefaultPathEntry(stablePath) {
         case .missing:
-            return stableDefaultSocketPath
+            return stablePath
         case .socket(let ownerUserID) where ownerUserID == currentUserID:
-            return stableDefaultSocketPath
+            return stablePath
         case .socket, .other, .inaccessible:
-            return userScopedStableSocketPath(currentUserID: currentUserID)
+            return userScopedStableSocketPath(branding: branding, currentUserID: currentUserID)
         }
     }
 
@@ -440,14 +453,20 @@ public struct SocketControlSettings {
     /// socket on every agent hook, and a different-identity process reaching into
     /// the app's Application Support data triggers the macOS Sequoia "access data
     /// from other apps" prompt (https://github.com/manaflow-ai/cmux/issues/5146).
-    public static func stableSocketDirectoryURL(fileManager: FileManager = .default) -> URL? {
-        CmuxStateDirectory.url(homeDirectory: fileManager.homeDirectoryForCurrentUser)
+    public static func stableSocketDirectoryURL(
+        fileManager: FileManager = .default,
+        branding: AppBranding = .current
+    ) -> URL? {
+        CmuxStateDirectory.url(homeDirectory: fileManager.homeDirectoryForCurrentUser, branding: branding)
     }
 
     /// The stable control socket file URL (within ``CmuxStateDirectory``), if it can be resolved.
-    public static func stableSocketFileURL(fileManager: FileManager = .default) -> URL? {
-        stableSocketDirectoryURL(fileManager: fileManager)?
-            .appendingPathComponent(stableSocketFileName, isDirectory: false)
+    public static func stableSocketFileURL(
+        fileManager: FileManager = .default,
+        branding: AppBranding = .current
+    ) -> URL? {
+        stableSocketDirectoryURL(fileManager: fileManager, branding: branding)?
+            .appendingPathComponent(branding.socketFileName, isDirectory: false)
     }
 
     @usableFromInline static func inspectStableDefaultSocketPathEntry(_ path: String) -> StableDefaultSocketPathEntry {

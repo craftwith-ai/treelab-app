@@ -1,3 +1,4 @@
+import CmuxFoundation
 import Foundation
 
 extension AgentJournalLifecycleCenter {
@@ -29,8 +30,7 @@ extension AgentJournalLifecycleCenter {
             with: "_",
             options: .regularExpression
         )
-        return appSupport
-            .appendingPathComponent("cmux", isDirectory: true)
+        return AppBranding.current.applicationSupportDirectory(in: appSupport)
             .appendingPathComponent("agent-journal-\(safeBundleID).sqlite3", isDirectory: false)
     }
 }

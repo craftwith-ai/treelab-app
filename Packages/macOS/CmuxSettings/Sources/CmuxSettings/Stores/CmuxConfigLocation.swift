@@ -1,3 +1,4 @@
+import CmuxFoundation
 import Foundation
 
 /// Conventional on-disk locations for the cmux JSON config.
@@ -21,13 +22,17 @@ public struct CmuxConfigLocation: Sendable, Hashable {
 
     /// Creates a location bundle anchored at the given home directory.
     ///
-    /// - Parameter home: The home directory to anchor paths to. Defaults to
-    ///   `FileManager.default.homeDirectoryForCurrentUser`. Pass a temp URL
-    ///   in tests.
-    public init(home: URL = FileManager.default.homeDirectoryForCurrentUser) {
-        // `URL.appending(path:)` is the modern Foundation API (macOS 13+);
-        // returns a non-optional URL without the legacy `isDirectory` flag.
-        self.userConfigFile = home.appending(path: ".config/cmux/cmux.json")
-        self.legacyFallbackFile = home.appending(path: ".config/cmux/settings.json")
+    /// - Parameters:
+    ///   - home: The home directory to anchor paths to. Defaults to
+    ///     `FileManager.default.homeDirectoryForCurrentUser`. Pass a temp URL
+    ///     in tests.
+    ///   - branding: The brand whose folder holds the files (`~/.config/treelab` for Treelab).
+    public init(
+        home: URL = FileManager.default.homeDirectoryForCurrentUser,
+        branding: AppBranding = .current
+    ) {
+        let directory = branding.configDirectory(homeDirectory: home)
+        self.userConfigFile = directory.appending(path: "cmux.json")
+        self.legacyFallbackFile = directory.appending(path: "settings.json")
     }
 }

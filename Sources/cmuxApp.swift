@@ -563,7 +563,7 @@ struct cmuxApp: App {
             }
 
             CommandGroup(replacing: .appInfo) {
-                Button(String(localized: "menu.app.about", defaultValue: "About cmux")) {
+                Button(AppBranding.current.rebranded(String(localized: "menu.app.about", defaultValue: "About cmux"))) {
                     showAboutPanel()
                 }
                 Button(String(localized: "menu.app.checkForUpdates", defaultValue: "Check for Updates…")) {
@@ -573,7 +573,7 @@ struct cmuxApp: App {
             }
 
             CommandGroup(replacing: .appTermination) {
-                splitCommandButton(title: String(localized: "menu.quitCmux", defaultValue: "Quit cmux"), shortcut: menuShortcut(for: .quit)) {
+                splitCommandButton(title: AppBranding.current.rebranded(String(localized: "menu.quitCmux", defaultValue: "Quit cmux")), shortcut: menuShortcut(for: .quit)) {
                     AppDelegate.requestApplicationTermination()
                 }
             }

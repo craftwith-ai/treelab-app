@@ -102,26 +102,26 @@ extension TabManager {
         } ?? ""
         let activeDirectory = activeWindowTitleDirectory(for: tab)
         // `{activeWorkspace}` stays host-free; `{defaultTitle}` carries the host.
-        let workspaceFallback = activeDirectory.isEmpty ? "cmux" : activeDirectory
+        let workspaceFallback = activeDirectory.isEmpty ? AppBranding.current.displayName : activeDirectory
         let resolvedTitle = template.resolved(context: WindowTitleTemplateContext(
             defaultTitle: defaultTitle,
             activeWorkspace: workspaceTitle.isEmpty ? (tab == nil ? defaultTitle : workspaceFallback) : workspaceTitle,
             activeDirectory: activeDirectory,
             windowId: windowId,
-            appName: "cmux"
+            appName: AppBranding.current.displayName
         ))
         let trimmedResolvedTitle = resolvedTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmedResolvedTitle.isEmpty ? defaultTitle : trimmedResolvedTitle
     }
 
     private func defaultWindowTitle(for tab: Workspace?) -> String {
-        guard let tab else { return "cmux" }
+        guard let tab else { return AppBranding.current.displayName }
         let windowTitle = resolvedWorkspaceWindowTitle(for: tab)
         if !windowTitle.isEmpty { return windowTitle }
         let trimmedDirectory = activeWindowTitleDirectory(for: tab)
         if !trimmedDirectory.isEmpty { return tab.hostLabel.windowTitle(appendingTo: trimmedDirectory) }
         let hostLabel = tab.hostLabel
-        return hostLabel.isRemote && !hostLabel.label.isEmpty ? hostLabel.label : "cmux"
+        return hostLabel.isRemote && !hostLabel.label.isEmpty ? hostLabel.label : AppBranding.current.displayName
     }
 
     private func activeWindowTitleDirectory(for tab: Workspace?) -> String {

@@ -131,8 +131,7 @@ struct CLISocketPathResolver {
         case inaccessible(errnoCode: Int32)
     }
 
-    private static let stableSocketFileName = "cmux.sock"
-    static let legacyDefaultSocketPath = "/tmp/cmux.sock"
+    static var legacyDefaultSocketPath: String { AppBranding.current.legacyTmpSocketPath }
     private static let fallbackSocketPath = "/tmp/cmux-debug.sock"
     private static let nightlySocketPath = "/tmp/cmux-nightly.sock"
     private static let rcSocketPath = "/tmp/cmux-rc.sock"
@@ -140,6 +139,8 @@ struct CLISocketPathResolver {
 
     private let environment: [String: String]
     private let bundleIdentifier: String?
+    /// Treelab for `sh.treelab.app` and unknown identifiers, cmux for `com.cmuxterm.app*`.
+    private let branding: AppBranding
     private let currentUserID: uid_t
     private let inspectSocketPathEntry: (String) -> SocketPathEntry
     private let socketAcceptsConnections: (String) -> Bool
@@ -168,10 +169,15 @@ struct CLISocketPathResolver {
     ) {
         self.environment = environment
         self.bundleIdentifier = bundleIdentifier
+        let branding = AppBranding.resolve(bundleIdentifier: bundleIdentifier)
+        self.branding = branding
         self.currentUserID = currentUserID
         self.inspectSocketPathEntry = inspectSocketPathEntry
         self.socketAcceptsConnections = socketAcceptsConnections
-        self.stateDirectory = stateDirectory ?? CmuxStateDirectory.url(homeDirectory: fileManager.homeDirectoryForCurrentUser)
+        self.stateDirectory = stateDirectory ?? CmuxStateDirectory.url(
+            homeDirectory: fileManager.homeDirectoryForCurrentUser,
+            branding: branding
+        )
 #if DEBUG
         self.confinesDiscoveryToStateDirectory = environment[Self.isolatedDiscoveryEnvironmentKey] == "1"
 #else
@@ -187,7 +193,7 @@ struct CLISocketPathResolver {
             bundleIdentifier: bundleIdentifier,
             environment: environment,
             isDebugBuild: false,
-            stableSocketPath: stableDefaultSocketPath,
+            stableSocketPath: stableDefaultSocketPath(branding: AppBranding.resolve(bundleIdentifier: bundleIdentifier)),
             debugSocketPath: fallbackSocketPath,
             nightlySocketPath: nightlySocketPath,
             rcSocketPath: rcSocketPath,
@@ -195,13 +201,14 @@ struct CLISocketPathResolver {
         )
     }
 
-    private static var stableDefaultSocketPath: String {
-        let stablePath: String? = stableSocketDirectoryURL()?.appendingPathComponent(stableSocketFileName, isDirectory: false).path
-        return stablePath ?? legacyDefaultSocketPath
+    private static func stableDefaultSocketPath(branding: AppBranding) -> String {
+        let stablePath: String? = stableSocketDirectoryURL(branding: branding)?
+            .appendingPathComponent(branding.socketFileName, isDirectory: false).path
+        return stablePath ?? branding.legacyTmpSocketPath
     }
 
     private var resolvedStableDefaultSocketPath: String {
-        stateDirectory.appendingPathComponent(Self.stableSocketFileName, isDirectory: false).path
+        stateDirectory.appendingPathComponent(branding.socketFileName, isDirectory: false).path
     }
 
     private func resolvedDefaultSocketPath() -> String {
@@ -217,14 +224,10 @@ struct CLISocketPathResolver {
         )
     }
 
-    private static func userScopedStableSocketPath(currentUserID: uid_t = getuid()) -> String {
-        stableSocketDirectoryURL()?
-            .appendingPathComponent("cmux-\(currentUserID).sock", isDirectory: false)
-            .path ?? legacyUserScopedStableSocketPath(currentUserID: currentUserID)
-    }
-
-    private static func legacyUserScopedStableSocketPath(currentUserID: uid_t = getuid()) -> String {
-        "/tmp/cmux-\(currentUserID).sock"
+    private static func userScopedStableSocketPath(branding: AppBranding, currentUserID: uid_t = getuid()) -> String {
+        stableSocketDirectoryURL(branding: branding)?
+            .appendingPathComponent(branding.userScopedSocketFileName(currentUserID: currentUserID), isDirectory: false)
+            .path ?? branding.legacyUserScopedTmpSocketPath(currentUserID: currentUserID)
     }
 
     static func isImplicitDefaultPath(
@@ -292,7 +295,7 @@ struct CLISocketPathResolver {
         // those markers too, in deterministic order, rather than treating one
         // variant's file as the entire discovery state.
         candidates.append(contentsOf: readLastSocketPaths(
-            bundleIdentifier: SocketPathMarkerFiles.stableBundleIdentifier,
+            bundleIdentifier: branding.bundleIdentifier,
             environment: [:]
         ))
 
@@ -346,9 +349,12 @@ struct CLISocketPathResolver {
     private func resolvedStableImplicitDefaultPaths() -> [String] {
         Self.dedupe([
             resolvedStableDefaultSocketPath,
-            Self.legacyDefaultSocketPath,
-            stateDirectory.appendingPathComponent("cmux-\(currentUserID).sock", isDirectory: false).path,
-            Self.legacyUserScopedStableSocketPath(currentUserID: currentUserID),
+            branding.legacyTmpSocketPath,
+            stateDirectory.appendingPathComponent(
+                branding.userScopedSocketFileName(currentUserID: currentUserID),
+                isDirectory: false
+            ).path,
+            branding.legacyUserScopedTmpSocketPath(currentUserID: currentUserID),
         ])
     }
 
@@ -432,20 +438,21 @@ struct CLISocketPathResolver {
     ) -> [String] {
         let variant = SocketPathMarkerFiles.variant(bundleIdentifier: bundleIdentifier, environment: environment)
         let defaultPath = defaultSocketPath(bundleIdentifier: bundleIdentifier, environment: environment)
+        let branding = AppBranding.resolve(bundleIdentifier: bundleIdentifier)
         if case .stable = variant {
-            return stableImplicitDefaultPaths()
+            return stableImplicitDefaultPaths(branding: branding)
         }
         return dedupe(
-            [defaultPath] + stableImplicitDefaultPaths()
+            [defaultPath] + stableImplicitDefaultPaths(branding: branding)
         )
     }
 
-    private static func stableImplicitDefaultPaths() -> [String] {
+    private static func stableImplicitDefaultPaths(branding: AppBranding) -> [String] {
         dedupe([
-            stableDefaultSocketPath,
-            legacyDefaultSocketPath,
-            userScopedStableSocketPath(),
-            legacyUserScopedStableSocketPath(),
+            stableDefaultSocketPath(branding: branding),
+            branding.legacyTmpSocketPath,
+            userScopedStableSocketPath(branding: branding),
+            branding.legacyUserScopedTmpSocketPath(currentUserID: getuid()),
         ])
     }
 
@@ -513,7 +520,8 @@ struct CLISocketPathResolver {
 #if DEBUG
         return SocketPathMarkerFiles.defaultBaseDebugBundleIdentifier
 #else
-        return SocketPathMarkerFiles.stableBundleIdentifier
+        // No identity at all: this fork fails closed to Treelab, never to cmux.
+        return AppBranding.current.bundleIdentifier
 #endif
     }
 
@@ -530,8 +538,8 @@ struct CLISocketPathResolver {
     /// CLI off the app's TCC-protected Application Support data on the agent hook
     /// path (https://github.com/manaflow-ai/cmux/issues/5146). The CLI is a
     /// composition root, so it names the concrete `FileManager.default` here.
-    private static func stableSocketDirectoryURL() -> URL? {
-        CmuxStateDirectory.url(homeDirectory: FileManager.default.homeDirectoryForCurrentUser)
+    private static func stableSocketDirectoryURL(branding: AppBranding) -> URL? {
+        CmuxStateDirectory.url(homeDirectory: FileManager.default.homeDirectoryForCurrentUser, branding: branding)
     }
 
     private static func dedupe(_ paths: [String]) -> [String] {

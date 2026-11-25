@@ -1,3 +1,4 @@
+import CmuxFoundation
 public import Foundation
 
 /// The per-user directory that holds cmux's control-plane runtime state: the
@@ -28,11 +29,10 @@ public import Foundation
 /// let socket = CmuxStateDirectory.url(homeDirectory: home).appendingPathComponent("cmux.sock")
 /// ```
 public enum CmuxStateDirectory {
-    /// The directory name segment under `~/.local/state` (and the legacy name
-    /// under `~/Library/Application Support`).
-    public static let directoryName = "cmux"
+    /// The directory name segment under `~/.local/state` for the running brand.
+    public static var directoryName: String { AppBranding.current.directoryName }
 
-    /// The cmux state directory: `<home>/.local/state/cmux`.
+    /// The state directory of the running brand: `<home>/.local/state/cmux`.
     ///
     /// The home directory is injected (no ambient `FileManager.default` default)
     /// so this stays a pure, testable function with no hidden global state.
@@ -45,10 +45,12 @@ public enum CmuxStateDirectory {
     /// - Returns: The state directory URL (its parents are created on first write
     ///   by the socket listener, marker writer, and password store).
     public static func url(homeDirectory: URL) -> URL {
-        homeDirectory
-            .appendingPathComponent(".local", isDirectory: true)
-            .appendingPathComponent("state", isDirectory: true)
-            .appendingPathComponent(directoryName, isDirectory: true)
+        url(homeDirectory: homeDirectory, branding: .current)
+    }
+
+    /// The state directory of `branding`: `<home>/.local/state/<directoryName>`.
+    public static func url(homeDirectory: URL, branding: AppBranding) -> URL {
+        branding.stateDirectory(homeDirectory: homeDirectory)
     }
 
     /// The legacy Application Support control directory
@@ -65,7 +67,7 @@ public enum CmuxStateDirectory {
     /// - Returns: The legacy directory, or `nil` when Application Support cannot
     ///   be resolved.
     public static func legacyApplicationSupportURL(fileManager: FileManager) -> URL? {
-        fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-            .appendingPathComponent(directoryName, isDirectory: true)
+        fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            .map(AppBranding.current.applicationSupportDirectory(in:))
     }
 }

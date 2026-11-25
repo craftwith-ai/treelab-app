@@ -1,4 +1,5 @@
 import CMUXAuthCore
+import CmuxFoundation
 import Foundation
 
 /// lint:allow namespace-type: moved unchanged from the app target, where it was an internal static namespace; reshaping it is a separate change from this package move.
@@ -123,7 +124,9 @@ public enum AuthEnvironment: Sendable {
         }
         if bundleIdentifier == "com.cmuxterm.app.nightly" { return "cmux-nightly" }
         if bundleIdentifier == "com.cmuxterm.app.rc" { return "cmux-rc" }
-        return "cmux"
+        // Treelab and unknown builds never claim cmux:// from the user's cmux; a caller that
+        // passes no identifier (billing checkout) gets the running app's own scheme.
+        return (bundleIdentifier.map { AppBranding.resolve(bundleIdentifier: $0) } ?? AppBranding.current).urlScheme
     }
 
     static func sanitizedCallbackSchemeTag(_ rawTag: String) -> String? {

@@ -1,3 +1,4 @@
+import CmuxFoundation
 public import Darwin
 public import Foundation
 
@@ -26,6 +27,7 @@ extension SocketControlSettings {
             environment: environment,
             isDebugBuild: isDebugBuild,
             stableSocketPath: resolvedStableDefaultSocketPath(
+                branding: AppBranding.resolve(bundleIdentifier: bundleIdentifier),
                 currentUserID: currentUserID,
                 probeStableDefaultPathEntry: probeStableDefaultPathEntry
             ),
