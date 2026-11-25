@@ -176,8 +176,9 @@ if [[ -d "$HELPER" ]]; then cp "$BRAND/icons/ComputerUseHelper.icns" "$HELPER/Co
 cp "$BRAND/themes/Treelab" "$BRAND/themes/Treelab Light" "$APP/Contents/Resources/ghostty/themes/"
 
 echo "==> Ad hoc signature"
-# Nested code whose resources changed first (helper, network extension), keeping its identity.
-for nested in "$HELPER" "$APP"/Contents/Library/SystemExtensions/*.systemextension; do
+# Nested code whose resources changed first (helper, network extension, Dock tile plugin),
+# keeping its identity; check-identity.sh verifies the whole bundle (--deep --strict).
+for nested in "$HELPER" "$APP"/Contents/Library/SystemExtensions/*.systemextension "$APP"/Contents/PlugIns/*.plugin; do
   [[ -d "$nested" ]] || continue
   /usr/bin/codesign --force --sign - --timestamp=none --preserve-metadata=identifier,entitlements,flags,runtime "$nested"
 done

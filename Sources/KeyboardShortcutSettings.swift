@@ -66,7 +66,8 @@ enum KeyboardShortcutSettings {
 
     /// The Settings package's view of ``isOffered(_:isChiefAvailable:)``.
     static func unavailableSettingsActions(isChiefAvailable: Bool) -> Set<ShortcutAction> {
-        (isChiefAvailable ? [] : [.openChief]).union(ShortcutAction.brandUnavailableActions(branding: .current))
+        let chief: Set<ShortcutAction> = isChiefAvailable ? [] : [.openChief]
+        return chief.union(ShortcutAction.brandUnavailableActions(branding: .current))
     }
 
     private static func orderedSettingsVisibleActions(from actions: [Action]) -> [Action] {
