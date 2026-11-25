@@ -32,6 +32,7 @@ public struct FeedbackComposerBridge {
     /// window-scoped notification.
     @MainActor
     public func openComposer(in window: NSWindow? = NSApp.keyWindow ?? NSApp.mainWindow) {
+        guard offersFeedback else { return }
         NotificationCenter.default.post(name: .feedbackComposerRequested, object: window)
     }
 
@@ -42,6 +43,11 @@ public struct FeedbackComposerBridge {
         message: String,
         imagePaths: [String]
     ) async throws -> Int {
+        guard offersFeedback else {
+            throw FeedbackComposerBridgeError.submissionFailed(
+                Self.userFacingMessage(for: FeedbackComposerSubmissionError.invalidEndpoint)
+            )
+        }
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
 

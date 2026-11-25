@@ -148,7 +148,10 @@ final class MenuBarExtraController: NSObject, NSMenuDelegate {
         caffeineItem.action = #selector(caffeineAction)
         menu.addItem(caffeineItem)
 
-        menu.addItem(MenuBarProfilingMenuItem.make())
+        // The profile is mailed to Manaflow: not offered by a brand without its services (Treelab).
+        if AppBranding.current.offersManaflowServices {
+            menu.addItem(MenuBarProfilingMenuItem.make())
+        }
         cloudSectionSeparator.isHidden = true
         menu.addItem(cloudSectionSeparator)
         menu.addItem(notificationListSeparator)
