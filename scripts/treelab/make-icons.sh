@@ -4,7 +4,7 @@
 #   AppIconLight.png, AppIconDark.png    1024 px, the Settings picker and the Dock follow them;
 #   appiconset/<size>[@2x][_dark].png    the app icon, light and dark (luminosity) variants;
 #   ComputerUseHelper.icns               the Computer Use helper's icon (dark variant).
-# Dark = the site's logo (#0c1410 tile); light = an #eef3ea tile with darker arcs.
+# Dark = the site's logo (#0c1410 tile); light = an #eef3ea tile with vivid arcs (#52a017, #ec8c0a: Alex's choice).
 # The arcs are the logo's own paths (64-unit view box), drawn with CoreGraphics on the macOS
 # icon grid (824 px rounded square on a 1024 px canvas, soft shadow).
 #
@@ -33,7 +33,7 @@ func hex(_ value: UInt32) -> (CGFloat, CGFloat, CGFloat) {
     (CGFloat((value >> 16) & 0xff) / 255, CGFloat((value >> 8) & 0xff) / 255, CGFloat(value & 0xff) / 255)
 }
 let dark = Palette(tileTop: hex(0x142019), tileBottom: hex(0x0c1410), line: hex(0xeef3ea), green: hex(0xb6f27a), orange: hex(0xf5b04a))
-let light = Palette(tileTop: hex(0xf6f9f3), tileBottom: hex(0xe3ebdd), line: hex(0x0c1410), green: hex(0x3d6b0f), orange: hex(0xb36b00))
+let light = Palette(tileTop: hex(0xf6f9f3), tileBottom: hex(0xe3ebdd), line: hex(0x0c1410), green: hex(0x52a017), orange: hex(0xec8c0a))
 let space = CGColorSpace(name: CGColorSpace.sRGB)!
 func color(_ c: (CGFloat, CGFloat, CGFloat), _ alpha: CGFloat = 1) -> CGColor { CGColor(colorSpace: space, components: [c.0, c.1, c.2, alpha])! }
 
