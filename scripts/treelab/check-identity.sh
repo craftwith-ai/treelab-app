@@ -60,7 +60,8 @@ ok "entitlements do not name com.cmuxterm.app"
 ok "bundled CLI present"
 
 # No measurement tool ships: no PostHog or Sentry file (CmuxSentryScrubbing has no SDK and may
-# stay), and no executable names their SDK or their collection domains. Every finding is listed.
+# stay), and no executable anywhere in the bundle (helpers in Contents/Library included) names
+# their SDK or their collection domains. Every finding is listed.
 sdk_findings=()
 while IFS= read -r path; do
   sdk_findings+=("file ${path#"$APP"/}")
@@ -73,7 +74,7 @@ while IFS= read -r -d '' binary; do
   done
   domains="$(LC_ALL=C strings -a "$binary" | grep -E -i -o '[a-z0-9.-]*(posthog\.com|sentry\.io)([^a-z0-9-]|$)' | sort -u | tr '\n' ' ' || true)"
   [[ -z "$domains" ]] || sdk_findings+=("domains in $label: $domains")
-done < <(find "$APP/Contents/MacOS" "$APP/Contents/Resources/bin" "$APP/Contents/Frameworks" -type f -print0)
+done < <(find "$APP" -type f -print0)
 if ((${#sdk_findings[@]} > 0)); then
   printf 'FAIL: measurement SDK leftover: %s\n' "${sdk_findings[@]}" >&2
   exit 1
