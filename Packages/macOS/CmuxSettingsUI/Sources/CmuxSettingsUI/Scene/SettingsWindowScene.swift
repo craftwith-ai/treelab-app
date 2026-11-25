@@ -433,7 +433,8 @@ public struct SettingsWindowRoot: View {
     /// still the latest — otherwise an earlier request would clobber
     /// the user's most recent navigation.
     private func applyScrollNavigation(_ notification: Notification, proxy: ScrollViewProxy) {
-        guard let destination = SettingsSectionID.navigationDestination(userInfo: notification.userInfo) else { return }
+        guard let requested = SettingsSectionID.navigationDestination(userInfo: notification.userInfo) else { return }
+        let destination = SettingsSectionID.shownDestination(requested)
         let target = destination.section
         let anchorID = destination.anchorID
         let shouldHighlight = (notification.userInfo?["highlight"] as? Bool) ?? false

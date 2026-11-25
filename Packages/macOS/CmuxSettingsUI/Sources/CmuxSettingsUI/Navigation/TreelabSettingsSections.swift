@@ -34,7 +34,9 @@ extension SettingsSectionID {
         _ destination: (section: SettingsSectionID, anchorID: String),
         hidden: Set<SettingsSectionID> = hidden()
     ) -> (section: SettingsSectionID, anchorID: String) {
-        destination
+        guard hidden.contains(destination.section) else { return destination }
+        let landing = landing(hidden: hidden)
+        return (landing, "section:\(landing.rawValue)")
     }
 }
 
