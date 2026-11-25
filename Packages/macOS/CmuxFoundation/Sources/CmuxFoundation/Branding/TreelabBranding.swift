@@ -67,7 +67,7 @@ public struct AppBranding: Equatable, Sendable {
             "DisableAutoUpdate",
             "DisableAICredentialUpload",
         ],
-        offersManaflowServices: true
+        offersManaflowServices: false
     )
 
     /// The stable socket file name inside ``stateDirectory(homeDirectory:)``.
