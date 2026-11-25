@@ -35,7 +35,7 @@ cd "$ROOT"
 # One environment for every tool below: the user's PATH and home, nothing from cmux.
 RUSTUP_BIN="$(brew --prefix rustup 2>/dev/null || echo /opt/homebrew/opt/rustup)/bin"
 # Ghostty pins Zig by major.minor (ghostty/build.zig.zon); Homebrew's plain `zig` is often newer.
-# shellcheck source=../ghostty-zig-version.sh
+# shellcheck source=scripts/ghostty-zig-version.sh
 source "$ROOT/scripts/ghostty-zig-version.sh"
 ZIG_MINOR="$(ghostty_minimum_zig_version "$ROOT" | cut -d. -f1,2)"
 ZIG_BIN="$(brew --prefix "zig@$ZIG_MINOR" 2>/dev/null || true)/bin"
@@ -83,6 +83,7 @@ run xcodebuild \
   ONLY_ACTIVE_ARCH=YES \
   CODE_SIGN_IDENTITY=- \
   DEVELOPMENT_TEAM= \
+  CODE_SIGN_ENTITLEMENTS= \
   CMUX_AUTH_CALLBACK_SCHEME="$URL_SCHEME" \
   build
 
@@ -114,12 +115,18 @@ for ((i = 0; i < count; i++)); do
 done
 
 echo "==> Ad hoc signature"
+# Like upstream's ad hoc Release (scripts/reload.sh), the app is built without entitlements:
+# keychain groups and personal-information access need a signing team.
 ENTITLEMENTS="$(mktemp "${TMPDIR:-/tmp}/treelab-entitlements.XXXXXX")"
 trap 'rm -f "$ENTITLEMENTS"' EXIT
-/usr/bin/codesign -d --entitlements :- "$BUILT_APP" 2>/dev/null > "$ENTITLEMENTS"
-# The keychain group follows the bundle id, so Treelab never shares cmux's items.
-sed -i '' "s/>${UPSTREAM_BUNDLE_ID//./\\.}</>${BUNDLE_ID}</g" "$ENTITLEMENTS"
-/usr/bin/codesign --force --sign - --timestamp=none --entitlements "$ENTITLEMENTS" "$APP"
+/usr/bin/codesign -d --entitlements :- "$BUILT_APP" 2>/dev/null > "$ENTITLEMENTS" || true
+if [[ -s "$ENTITLEMENTS" ]]; then
+  # Any group named after the bundle id follows it, so Treelab never shares cmux's items.
+  sed -i '' "s/>${UPSTREAM_BUNDLE_ID//./\\.}</>${BUNDLE_ID}</g" "$ENTITLEMENTS"
+  /usr/bin/codesign --force --sign - --timestamp=none --entitlements "$ENTITLEMENTS" "$APP"
+else
+  /usr/bin/codesign --force --sign - --timestamp=none "$APP"
+fi
 
 LINKS_AFTER="$(links_state)"
 if [[ "$LINKS_BEFORE" != "$LINKS_AFTER" ]]; then
