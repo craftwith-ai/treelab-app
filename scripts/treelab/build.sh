@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds Treelab.app from this checkout: Release, arm64, bundle id sh.treelab.app,
-# empty Sparkle feed, ad hoc signature, its own DerivedData, no global CLI links.
+# inert Sparkle feed, ad hoc signature, its own DerivedData, no global CLI links.
 #
 # Usage: scripts/treelab/build.sh [--output <dir>] [--derived-data <dir>]
 #   --output        where Treelab.app is written (default: build/treelab)
@@ -104,8 +104,11 @@ set_string CFBundleExecutable "$APP_NAME"
 set_string CFBundleName "$APP_NAME"
 set_string CFBundleDisplayName "$APP_NAME"
 set_string CFBundleIdentifier "$BUNDLE_ID"
-# Empty update feed: Treelab never asks GitHub for cmux releases.
-plutil -replace SUFeedURL -string "" "$PLIST"
+# Inert update feed on this Mac: upstream falls back to cmux's public appcast when SUFeedURL is
+# empty (UpdateFeedResolver) and forces automatic checks on at first launch, so an empty feed would
+# offer to replace Treelab with cmux. The loopback discard port refuses at once; nothing leaves.
+TREELAB_FEED_URL="https://127.0.0.1:9/treelab-appcast.xml"
+plutil -replace SUFeedURL -string "$TREELAB_FEED_URL" "$PLIST"
 plutil -replace SUEnableAutomaticChecks -bool NO "$PLIST"
 # URL types are named after the bundle id at build time.
 count="$(pb 'Print :CFBundleURLTypes' | grep -c '^    Dict {' || true)"

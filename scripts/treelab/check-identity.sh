@@ -39,10 +39,11 @@ grep -q '^Identifier=sh\.treelab\.app$' <<< "$signature" || fail "code signing i
 /usr/bin/codesign --verify --deep --strict "$APP" 2>&1 || fail "codesign --verify --deep --strict failed"
 ok "codesign --verify --deep --strict"
 
+# An empty feed falls back to cmux's public appcast: the feed must be the loopback one.
 feed="$(key SUFeedURL)"
-[[ -z "$feed" ]] || fail "SUFeedURL is '$feed', expected empty"
+[[ "$feed" == https://127.0.0.1:9/* ]] || fail "SUFeedURL is '$feed', expected the inert loopback feed"
 [[ "$(key SUEnableAutomaticChecks)" == "false" ]] || fail "SUEnableAutomaticChecks is not false"
-ok "Sparkle feed empty, automatic checks off"
+ok "Sparkle feed inert ($feed), automatic checks off"
 
 schemes="$(key CFBundleURLTypes | awk '/CFBundleURLSchemes/{f=1; next} f && /\}/{f=0} f{gsub(/^ +/, ""); print}')"
 grep -qx 'treelab' <<< "$schemes" || fail "URL scheme treelab not registered"
