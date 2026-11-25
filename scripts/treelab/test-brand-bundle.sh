@@ -6,7 +6,7 @@
 #   A. "cmux" naming the app becomes the brand name in English, French, German, Japanese, Arabic,
 #      the keys of rules.json "key_overrides" take their text (the accent is not blue), and a
 #      package key naming cmux that the main table lacks is added to it (upstream calls without
-#      bundle: read the main table);
+#      bundle: read the main table), like a main-table key the brand changes that a language lacks;
 #   B. technical names stay: `code`, quoted commands, cmux.json, cmux-tui, ~/.cmuxterm, paths,
 #      addresses, CMUX_* variables, identifiers, "Usage: cmux", every cli.* key, the GPL line;
 #   C. format specifiers (%@, %1$@, %#@n@) and each file's format and encoding are kept,
@@ -117,6 +117,9 @@ write(os.path.join(res, "ar.lproj", "Localizable.strings"), {
     "lost": "فقد CMUX الاتصال بالامتداد.",
     "load": "تعذر على cmux تحميل الإعدادات.",
 }, "binary")
+write(os.path.join(res, "bs.lproj", "Localizable.strings"), {
+    "load": "cmux ne može učitati postavke.",
+}, "binary")
 write(os.path.join(res, "CmuxFoundation_CmuxFoundation.bundle", "Contents", "Resources", "en.lproj", "Localizable.strings"), {
     "nested": "cmux could not reach the server.",
 }, "xml-utf16")
@@ -224,6 +227,23 @@ expect_value Contents/Resources/ja.lproj/Localizable.strings settings.sub.note "
 expect_value "$EN" quit "Quit Treelab"
 for missing in settings.sub.plain cli.sub.help; do
   if value "$APP/$EN" "$missing" >/dev/null 2>&1; then fail "$missing copied to the main table"; else pass "$missing not copied"; fi
+done
+
+# A4. Main-table keys the brand changes and a language lacks get the branded English text there:
+#     macOS shows the binary's English default (cmux included) for a missing key, never the en table.
+expect_value Contents/Resources/de.lproj/Localizable.strings restart "Restart Treelab."
+expect_value Contents/Resources/ja.lproj/Localizable.strings quit "Quit Treelab"
+expect_value Contents/Resources/ar.lproj/Localizable.strings possessive "Treelab's browser"
+expect_value Contents/Resources/fr.lproj/Localizable.strings quit "Quitter Treelab"
+expect_value Contents/Resources/bs.lproj/Localizable.strings settings.notifications.paneFlashThemeColor.subtitle \
+  "Use the terminal theme foreground for flashes; unread rings keep the accent color."
+expect_value Contents/Resources/bs.lproj/Localizable.strings restart "Restart Treelab."
+for missing in json backtick env identifier; do
+  if value "$APP/Contents/Resources/de.lproj/Localizable.strings" "$missing" >/dev/null 2>&1; then
+    fail "$missing (technical name only) copied to de"
+  else
+    pass "$missing not copied to de"
+  fi
 done
 
 # B. Technical names stay.
