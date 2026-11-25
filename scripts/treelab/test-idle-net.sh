@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# Tests the guard of scripts/treelab/idle-net.sh without measuring anything:
+# Tests scripts/treelab/idle-net.sh:
 #   A. a process whose bundle is com.cmuxterm.app (the user's cmux) is refused, rc 2, named as cmux;
 #   B. a process of another app is refused, rc 2;
 #   C. a missing or malformed --pid is refused, rc 2;
-# and in every case no measurement folder is created. The processes are a tiny waiting program
+# and in every case no measurement folder is created;
+#   D. a 1-minute measurement of a fake Treelab resolves an allowed host again during the run
+#      (its addresses rotate), through a fake dscacheutil that answers a new address each time.
+# The processes are a tiny waiting program
 # compiled here (macOS kills a copied system binary) inside throwaway .app bundles: the real cmux
 # is never looked at.
 # Usage: scripts/treelab/test-idle-net.sh   (exit 0 = all pass)
@@ -19,7 +22,7 @@ cleanup() {
 trap cleanup EXIT
 
 # a waiting program of our own: a copy of /bin/sleep is killed by macOS launch constraints
-printf '#include <unistd.h>\nint main(void) { sleep(60); return 0; }\n' | cc -x c -o "$WORK/waiter" -
+printf '#include <unistd.h>\nint main(void) { sleep(180); return 0; }\n' | cc -x c -o "$WORK/waiter" -
 
 failures=0
 pass() { echo "ok: $*"; }
@@ -70,8 +73,25 @@ expect "C1: refusal says no process" grep -q "REFUSED: no process 999999" <<< "$
 run_guard C2 --pid abc
 expect "C2: refusal says --pid must be a number" grep -q "REFUSED: --pid must be a number" <<< "$ERR"
 
+# D. an allowed host is resolved again during the measurement (no network: fake resolver)
+mkdir -p "$WORK/bin"
+cat > "$WORK/bin/dscacheutil" <<RESOLVER
+#!/bin/sh
+n=\$(( \$(cat "$WORK/resolutions" 2>/dev/null || echo 0) + 1 ))
+echo "\$n" > "$WORK/resolutions"
+printf 'name: example.test\nip_address: 192.0.2.%s\n\n' "\$n"
+RESOLVER
+chmod +x "$WORK/bin/dscacheutil"
+fake_app Treelab sh.treelab.app; treelab_pid="$FAKE_PID"
+RC=0
+PATH="$WORK/bin:$PATH" "$SCRIPT" --minutes 1 --pid "$treelab_pid" --allow-host example.test --out "$WORK/out-D" \
+  >"$WORK/D.stdout" 2>"$WORK/D.stderr" || RC=$?
+expect "D: measurement rc 0" test "$RC" -eq 0
+distinct="$(awk '{print $2}' "$WORK/out-D/allowed-addresses.txt" 2>/dev/null | sort -u | grep -c . || true)"
+expect "D: example.test resolved again during the run ($distinct addresses, at least 5)" test "${distinct:-0}" -ge 5
+
 if ((failures > 0)); then
   echo "FAIL: $failures check(s)" >&2
   exit 1
 fi
-echo "PASS: idle-net.sh guard"
+echo "PASS: idle-net.sh guard and allowed-host resolution"
