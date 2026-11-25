@@ -39,6 +39,10 @@ import Testing
             ContentView.commandPaletteAuthTeamMembersCommandId,
             ContentView.commandPaletteProUpgradeCommandId,
             ContentView.commandPaletteProWelcomeChecklistCommandId,
+            ContentView.commandPaletteMobileConnectCommandId,
+            ContentView.commandPaletteCheckForUpdatesCommandId,
+            ContentView.commandPaletteApplyUpdateIfAvailableCommandId,
+            ContentView.commandPaletteAttemptUpdateCommandId,
         ]
         let toggleIDs = ContentView.commandPaletteSettingsToggleCommandContributions().map(\.commandId)
             .filter { $0.hasSuffix(".sendAnonymousTelemetry") || $0.hasSuffix(".showCloudDeviceIconsInSidebar") }

@@ -1,4 +1,5 @@
 import CMUXMobileCore
+import CmuxFoundation
 import CmuxSettings
 import Foundation
 import Observation
@@ -496,8 +497,12 @@ final class CmuxFeatureFlags {
         remoteFlagValueProvider: @escaping (String) -> Any? = CmuxFeatureFlags.sdkFlagValue,
         remoteFlagLoader: (@Sendable () async -> [String: Bool]?)? = nil,
         publishesOffMainSnapshot: Bool = false,
-        pinsFlagsToLocalValues: Bool = CmuxFeatureFlags.pinsFlagsToLocalValuesForCurrentLaunch
+        pinsFlagsToLocalValues: Bool = CmuxFeatureFlags.pinsFlagsToLocalValuesForCurrentLaunch,
+        branding: AppBranding = .current
     ) {
+        // A brand without Manaflow's services (Treelab) never fetches remote flags, so values an
+        // older build cached would stay frozen forever: it keeps the built-in defaults instead.
+        let readsRemoteCache = branding.offersManaflowServices
         self.defaults = defaults
         self.overrideCapability = overrideCapability
         self.publishesOffMainSnapshot = publishesOffMainSnapshot
