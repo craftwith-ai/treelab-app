@@ -71,6 +71,26 @@ DIFF_RUST_TOOLCHAIN="$(awk -F '"' '/^[[:space:]]*channel[[:space:]]*=/{print $2;
 run rustup toolchain install "$DIFF_RUST_TOOLCHAIN" --profile minimal --component clippy,rustfmt >/dev/null
 run rustup target add --toolchain "$DIFF_RUST_TOOLCHAIN" aarch64-apple-darwin x86_64-apple-darwin >/dev/null
 
+echo "==> Computer Use helper source (cmux-cua without its PostHog telemetry)"
+# Upstream compiles the Computer Use helper from cmux-cua, whose binary carries a PostHog capture URL
+# and an install ping that ignores CMUX_CUA_TELEMETRY_ENABLED. Treelab hands upstream's build
+# (CMUX_CUA_SRC, its option for a local checkout with edits) the same pinned commit with that
+# telemetry removed; when upstream moves the pin and the patch no longer applies, the build stops here.
+CUA_PIN="$(sed -n 's/^CMUX_CUA_PINNED_SHA="\([0-9a-f]\{40\}\)"$/\1/p' scripts/build-cmux-cua.sh)"
+# shellcheck disable=SC2016 # the ${...} is upstream's literal text, matched as is
+CUA_REPO="$(sed -n 's/^CMUX_CUA_REPO_URL="${CMUX_CUA_REPO_URL:-\(.*\)}"$/\1/p' scripts/build-cmux-cua.sh)"
+[[ -n "$CUA_PIN" && -n "$CUA_REPO" ]] || { echo "error: cmux-cua pin unreadable in scripts/build-cmux-cua.sh" >&2; exit 1; }
+CUA_MIRROR="$HOME/.cache/treelab/cmux-cua.git"
+CUA_SRC="$OUTPUT_DIR/cmux-cua-src"
+[[ -d "$CUA_MIRROR" ]] || run git clone --quiet --bare "$CUA_REPO" "$CUA_MIRROR"
+run git -C "$CUA_MIRROR" cat-file -e "$CUA_PIN^{commit}" 2>/dev/null || run git -C "$CUA_MIRROR" fetch --quiet origin "$CUA_PIN"
+run git -C "$CUA_MIRROR" update-ref refs/treelab/pinned "$CUA_PIN"
+rm -rf "$CUA_SRC"
+run git clone --quiet --shared --no-checkout "$CUA_MIRROR" "$CUA_SRC"
+run git -C "$CUA_SRC" checkout --quiet --detach "$CUA_PIN"
+run git -C "$CUA_SRC" apply "$ROOT/scripts/treelab/cmux-cua-no-telemetry.patch"
+CLEAN_ENV+=(CMUX_CUA_SRC="$CUA_SRC")
+
 echo "==> GhosttyKit (pinned prebuilt, Zig build as fallback)"
 run "$ROOT/scripts/ensure-ghosttykit.sh"
 
