@@ -94,15 +94,38 @@ nettop_pid=$!
 trap 'kill "$nettop_pid" 2>/dev/null || true' EXIT
 
 # Treelab's process tree, every second, until nettop ends: "epoch pid ppid comm" per process.
+# Helpers launchd starts for Treelab (WebKit and other XPC services, ppid 1) are not under it in
+# `ps`: macOS still names Treelab as their responsible process, so they are recorded with Treelab
+# as parent and counted as app. A process the user detaches from a Treelab shell is counted as app
+# too: a false red, never a false green.
+sample_tree() {
+  python3 - "$ROOT_PID" "$(date +%s)" <<'PY'
+import ctypes, subprocess, sys
+root, now = int(sys.argv[1]), sys.argv[2]
+responsible = ctypes.CDLL("/usr/lib/libSystem.B.dylib").responsibility_get_pid_responsible_for_pid
+responsible.argtypes, responsible.restype = [ctypes.c_int], ctypes.c_int
+ppid, comm = {}, {}
+for row in subprocess.run(["ps", "-axo", "pid=,ppid=,comm="], capture_output=True, text=True).stdout.splitlines():
+    parts = row.split(None, 2)
+    if len(parts) == 3:
+        ppid[int(parts[0])], comm[int(parts[0])] = int(parts[1]), parts[2]
+for pid in ppid:
+    q = pid
+    for _ in range(64):
+        if q == root:
+            print(now, pid, ppid[pid], comm[pid])
+            break
+        if q not in ppid or q <= 1:
+            if pid != root and responsible(pid) == root:
+                print(now, pid, root, comm[pid])
+            break
+        q = ppid[q]
+PY
+}
 : > "$OUT/tree.log"
 while kill -0 "$nettop_pid" 2>/dev/null; do
   kill -0 "$ROOT_PID" 2>/dev/null || { echo "Treelab (pid $ROOT_PID) exited during the measurement" > "$OUT/root-exited.txt"; }
-  now="$(date +%s)"
-  ps -axo pid=,ppid=,comm= | awk -v root="$ROOT_PID" -v now="$now" '
-    { pid=$1; ppid[pid]=$2; $1=""; $2=""; sub(/^  */, ""); comm[pid]=$0 }
-    END {
-      for (p in ppid) { q=p; for (i=0; i<64 && q!="" && q!=0; i++) { if (q==root) { print now, p, ppid[p], comm[p]; break } q=ppid[q] } }
-    }' >> "$OUT/tree.log"
+  sample_tree >> "$OUT/tree.log"
   sleep 1
 done
 wait "$nettop_pid" || true
