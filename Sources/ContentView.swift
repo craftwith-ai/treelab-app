@@ -15898,11 +15898,13 @@ private enum SidebarHelpMenuAction {
 }
 
 private struct SidebarHelpMenuButton: View {
-    private let docsURL = URL(string: "https://cmux.com/docs")
-    private let changelogURL = URL(string: "https://cmux.com/docs/changelog")
-    private let githubURL = URL(string: "https://github.com/manaflow-ai/cmux")
-    private let githubIssuesURL = URL(string: "https://github.com/manaflow-ai/cmux/issues")
-    private let discordURL = URL(string: "https://discord.gg/xsgFEVrWCZ")
+    // The brand's pages (treelab.sh for Treelab, cmux.com upstream); no community chat for Treelab.
+    private let helpLinks = AppBranding.current.helpLinks
+    private var docsURL: URL? { helpLinks.docs }
+    private var changelogURL: URL? { helpLinks.changelog }
+    private var githubURL: URL? { helpLinks.source }
+    private var githubIssuesURL: URL? { helpLinks.support }
+    private var discordURL: URL? { helpLinks.community }
     private let helpTitle = String(localized: "sidebar.help.button", defaultValue: "Help")
     private let buttonSize = SidebarFooterButtonMetrics.buttonSize
 #if DEBUG
@@ -16039,7 +16041,8 @@ private struct SidebarHelpMenuButton: View {
             }
             if githubIssuesURL != nil {
                 helpOptionButton(
-                    title: String(localized: "sidebar.help.githubIssues", defaultValue: "GitHub Issues"),
+                    title: AppBranding.current.supportMenuTitle
+                        ?? String(localized: "sidebar.help.githubIssues", defaultValue: "GitHub Issues"),
                     action: .githubIssues,
                     accessibilityIdentifier: "SidebarHelpMenuOptionGitHubIssues",
                     isExternalLink: true

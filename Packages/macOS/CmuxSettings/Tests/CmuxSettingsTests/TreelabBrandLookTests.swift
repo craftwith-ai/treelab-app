@@ -10,6 +10,22 @@ import Testing
 @Suite struct TreelabBrandLookTests {
     private static let siteGreen = [0xB6, 0xF2, 0x7A]
     private static let readableGreen = [0x3D, 0x6B, 0x0F]
+    /// The languages of the app's Contents/Resources/*.lproj.
+    private static let shippedLanguages = ["ar", "bs", "da", "de", "en", "es", "fr", "it", "ja", "km", "ko", "nb", "pl",
+                                           "pt-BR", "ru", "th", "tr", "uk", "zh-Hans", "zh-Hant"]
+
+    /// The localizations of one key of CmuxFoundation's Treelab.xcstrings.
+    private func treelabCatalogLocalizations(key: String) throws -> [String: Any] {
+        let catalogURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("CmuxFoundation/Sources/CmuxFoundation/Resources/Treelab.xcstrings")
+        let data = try Data(contentsOf: catalogURL)
+        let catalog = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let strings = try #require(catalog["strings"] as? [String: Any])
+        let entry = try #require(strings[key] as? [String: Any], "\(key) missing")
+        return try #require(entry["localizations"] as? [String: Any])
+    }
 
     // MARK: Accent
 
@@ -96,19 +112,9 @@ import Testing
     }
 
     @Test func treelabCreditLineIsTranslatedInEveryShippedLanguage() throws {
-        let catalogURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("CmuxFoundation/Sources/CmuxFoundation/Resources/Treelab.xcstrings")
-        let data = try Data(contentsOf: catalogURL)
-        let catalog = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
-        let strings = try #require(catalog["strings"] as? [String: Any])
-        let entry = try #require(strings["treelab.about.upstreamCredit"] as? [String: Any])
-        let localizations = try #require(entry["localizations"] as? [String: Any])
-        let shipped = ["ar", "bs", "da", "de", "en", "es", "fr", "it", "ja", "km", "ko", "nb", "pl", "pt-BR", "ru",
-                       "th", "tr", "uk", "zh-Hans", "zh-Hant"]
+        let localizations = try treelabCatalogLocalizations(key: "treelab.about.upstreamCredit")
         var english: String?
-        for language in shipped {
+        for language in Self.shippedLanguages {
             let unit = (localizations[language] as? [String: Any])?["stringUnit"] as? [String: Any]
             let value = unit?["value"] as? String ?? ""
             #expect(unit?["state"] as? String == "translated", "\(language) not translated")
@@ -117,6 +123,17 @@ import Testing
             if language == "en" { english = value } else { #expect(value != english, "\(language) copies English") }
         }
         #expect(english == "Based on cmux by Manaflow — GPL-3.0-or-later")
+    }
+
+    @Test func treelabNamesItsSupportEntryAndCmuxKeepsGitHubIssues() throws {
+        #expect(AppBranding.treelab.supportMenuTitle?.isEmpty == false)
+        #expect(AppBranding.cmux.supportMenuTitle == nil)
+        let localizations = try treelabCatalogLocalizations(key: "treelab.help.support")
+        for language in Self.shippedLanguages {
+            let unit = (localizations[language] as? [String: Any])?["stringUnit"] as? [String: Any]
+            #expect(unit?["state"] as? String == "translated", "\(language) not translated")
+            #expect((unit?["value"] as? String)?.isEmpty == false, "\(language) empty")
+        }
     }
 
     // MARK: Shortcuts

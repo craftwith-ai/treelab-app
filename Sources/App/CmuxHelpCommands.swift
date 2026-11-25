@@ -98,9 +98,31 @@ extension cmuxApp {
         }
     }
 
+    @ViewBuilder
     private func helpResourceButton(_ resource: CmuxHelpResource) -> some View {
-        Button(resource.title) {
-            NSWorkspace.shared.open(resource.url)
+        if let destination = Self.helpResourceDestination(resource) {
+            Button(destination.title) {
+                NSWorkspace.shared.open(destination.url)
+            }
+        }
+    }
+
+    /// Where a Help menu entry leads for the running brand. Treelab sends its guide, release
+    /// notes and support entries to treelab.sh and has no community chat (`nil` hides the entry);
+    /// the detailed docs pages stay on cmux.com, which documents the same features. Upstream
+    /// cmux is unchanged.
+    static func helpResourceDestination(
+        _ resource: CmuxHelpResource,
+        branding: AppBranding = .current
+    ) -> (title: String, url: URL)? {
+        guard branding != .cmux else { return (resource.title, resource.url) }
+        let links = branding.helpLinks
+        switch resource {
+        case .gettingStarted: return (resource.title, links.docs)
+        case .changelog: return (resource.title, links.changelog)
+        case .githubIssues: return (branding.supportMenuTitle ?? resource.title, links.support)
+        case .discord: return links.community.map { (title: resource.title, url: $0) }
+        default: return (resource.title, resource.url)
         }
     }
 

@@ -87,7 +87,7 @@ final class MenuBarExtraController: NSObject, NSMenuDelegate {
             button.imagePosition = .imageOnly
             button.imageScaling = .scaleProportionallyDown
             button.image = MenuBarIconRenderer.makeImage(unreadCount: 0)
-            button.toolTip = "cmux"
+            button.toolTip = AppBranding.current.displayName
         }
 
         notificationMenuSnapshotCancellable = notificationStore.$notificationMenuSnapshot
@@ -252,11 +252,12 @@ final class MenuBarExtraController: NSObject, NSMenuDelegate {
 
         if let button = statusItem.button {
             button.image = MenuBarIconRenderer.makeImage(unreadCount: displayedUnreadCount)
+            let appName = AppBranding.current.displayName
             button.toolTip = displayedUnreadCount == 0
-                ? "cmux"
+                ? appName
                 : displayedUnreadCount == 1
-                    ? "cmux: " + String(localized: "statusMenu.tooltip.unread.one", defaultValue: "1 unread notification")
-                    : "cmux: " + String(localized: "statusMenu.tooltip.unread.other", defaultValue: "\(displayedUnreadCount) unread notifications")
+                    ? "\(appName): " + String(localized: "statusMenu.tooltip.unread.one", defaultValue: "1 unread notification")
+                    : "\(appName): " + String(localized: "statusMenu.tooltip.unread.other", defaultValue: "\(displayedUnreadCount) unread notifications")
         }
     }
 
@@ -788,8 +789,15 @@ enum MenuBarIconRenderer {
         image.lockFocus()
         defer { image.unlockFocus() }
 
-        let glyphRect = NSRect(x: 1.2, y: 1.5, width: 11.6, height: 15.0)
-        drawGlyph(in: glyphRect)
+        if AppBranding.current == .cmux {
+            let glyphRect = NSRect(x: 1.2, y: 1.5, width: 11.6, height: 15.0)
+            drawGlyph(in: glyphRect)
+        } else {
+            // The brand's arcs (treelab.sh logo); smaller in the lower left when a count is shown.
+            drawArcsGlyph(in: badgeText == nil
+                ? NSRect(x: 0.5, y: 4.0, width: 17.0, height: 10.0)
+                : NSRect(x: 0.5, y: 1.5, width: 12.0, height: 7.1))
+        }
 
         if let text = badgeText {
             drawBadge(text: text, in: config.badgeRect, config: config)
@@ -826,6 +834,38 @@ enum MenuBarIconRenderer {
 
         NSColor.black.setFill()
         path.fill()
+    }
+
+    /// The treelab.sh logo's strokes (64-unit view box, y down), fitted in `rect`.
+    private static func drawArcsGlyph(in rect: NSRect) {
+        let bounds = NSRect(x: 4.0, y: 17.3, width: 57.0, height: 33.5)  // strokes included
+        let scale = min(rect.width / bounds.width, rect.height / bounds.height)
+        func map(_ x: CGFloat, _ y: CGFloat) -> NSPoint {
+            NSPoint(x: rect.minX + (x - bounds.minX) * scale, y: rect.minY + (bounds.maxY - y) * scale)
+        }
+        let strokes: [[CGFloat]] = [
+            [6, 40, 50, 40],
+            [8, 40, 8, 14, 34, 12, 48, 38],
+            [14, 40, 15, 24, 34, 22, 45, 39],
+            [20, 40, 21, 31, 33, 30, 42, 39],
+            [10, 40, 12, 51, 34, 52, 46, 41],
+            [50, 40, 54, 40, 56, 36, 59, 30],
+            [50, 40, 54, 40, 56, 44, 59, 48],
+        ]
+        NSColor.black.setStroke()
+        for p in strokes {
+            let path = NSBezierPath()
+            path.lineWidth = 4 * scale
+            path.lineCapStyle = .round
+            path.lineJoinStyle = .round
+            path.move(to: map(p[0], p[1]))
+            if p.count == 4 {
+                path.line(to: map(p[2], p[3]))
+            } else {
+                path.curve(to: map(p[6], p[7]), controlPoint1: map(p[2], p[3]), controlPoint2: map(p[4], p[5]))
+            }
+            path.stroke()
+        }
     }
 
     private static func drawBadge(text: String, in rect: NSRect, config: MenuBarBadgeRenderConfig) {
