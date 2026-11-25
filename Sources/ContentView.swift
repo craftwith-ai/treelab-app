@@ -7289,12 +7289,14 @@ struct ContentView: View {
         var handlerRegistry = CommandPaletteHandlerRegistry()
         registerCommandPaletteHandlers(&handlerRegistry)
         let cloudCapabilityPolicy = CommandPaletteCloudCapabilityPolicy()
+        let brandPolicy = TreelabCommandPalettePolicy()
 
         var commands: [CommandPaletteCommand] = []
         commands.reserveCapacity(contributions.count)
         var nextRank = 0
 
         for contribution in contributions {
+            guard brandPolicy.allows(commandId: contribution.commandId) else { continue }
             guard cloudCapabilityPolicy.allows(
                 commandId: contribution.commandId,
                 context: context
@@ -15973,7 +15975,7 @@ private struct SidebarHelpMenuButton: View {
                 accessibilityIdentifier: "SidebarHelpMenuOptionWelcome",
                 isExternalLink: false
             )
-            if let offer = ProUpgradePresenter.currentUpgradeOffer {
+            if AppBranding.current.offersManaflowServices, let offer = ProUpgradePresenter.currentUpgradeOffer {
                 helpOptionButton(
                     title: ProUpgradePresenter.upgradeMenuTitle(for: offer),
                     action: .upgrade,
@@ -16001,14 +16003,16 @@ private struct SidebarHelpMenuButton: View {
                 accessibilityIdentifier: "SidebarHelpMenuOptionImportBrowserData",
                 isExternalLink: false
             )
-            helpOptionButton(
-                title: String(localized: "sidebar.help.sendFeedback", defaultValue: "Send Feedback"),
-                action: .sendFeedback,
-                accessibilityIdentifier: "SidebarHelpMenuOptionSendFeedback",
-                isExternalLink: false,
-                shortcutHint: sendFeedbackShortcutHint,
-                trailingSystemImage: "bubble.left.and.text.bubble.right"
-            )
+            if AppBranding.current.offersManaflowServices {
+                helpOptionButton(
+                    title: String(localized: "sidebar.help.sendFeedback", defaultValue: "Send Feedback"),
+                    action: .sendFeedback,
+                    accessibilityIdentifier: "SidebarHelpMenuOptionSendFeedback",
+                    isExternalLink: false,
+                    shortcutHint: sendFeedbackShortcutHint,
+                    trailingSystemImage: "bubble.left.and.text.bubble.right"
+                )
+            }
             if docsURL != nil {
                 helpOptionButton(
                     title: String(localized: "about.docs", defaultValue: "Docs"),
@@ -16049,12 +16053,14 @@ private struct SidebarHelpMenuButton: View {
                     isExternalLink: true
                 )
             }
-            helpOptionButton(
-                title: String(localized: "command.checkForUpdates.title", defaultValue: "Check for Updates"),
-                action: .checkForUpdates,
-                accessibilityIdentifier: "SidebarHelpMenuOptionCheckForUpdates",
-                isExternalLink: false
-            )
+            if AppBranding.current.offersManaflowServices {
+                helpOptionButton(
+                    title: String(localized: "command.checkForUpdates.title", defaultValue: "Check for Updates"),
+                    action: .checkForUpdates,
+                    accessibilityIdentifier: "SidebarHelpMenuOptionCheckForUpdates",
+                    isExternalLink: false
+                )
+            }
         }
         .padding(8)
         .frame(minWidth: 200)

@@ -92,9 +92,12 @@ enum SidebarFooterControl: CaseIterable, Equatable {
 enum SidebarFooterPresentationPolicy {
     static func isVisible(
         _ control: SidebarFooterControl,
-        presentationMode: WorkspacePresentationModeSettings.Mode
+        presentationMode: WorkspacePresentationModeSettings.Mode,
+        branding: AppBranding = .current
     ) -> Bool {
-        presentationMode != .minimal || control == .upgrade
+        // A brand without Manaflow's services (Treelab) shows no account button and no Pro badge.
+        if !branding.offersManaflowServices, control == .account || control == .upgrade { return false }
+        return presentationMode != .minimal || control == .upgrade
     }
 
     static func isUpgradeVisible(

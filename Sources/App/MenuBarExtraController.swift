@@ -175,7 +175,9 @@ final class MenuBarExtraController: NSObject, NSMenuDelegate {
 
         checkForUpdatesItem.target = self
         checkForUpdatesItem.action = #selector(checkForUpdatesAction)
-        menu.addItem(checkForUpdatesItem)
+        if AppBranding.current.offersManaflowServices {
+            menu.addItem(checkForUpdatesItem)
+        }
 
         preferencesItem.target = self
         preferencesItem.action = #selector(preferencesAction)

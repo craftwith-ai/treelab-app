@@ -566,8 +566,10 @@ struct cmuxApp: App {
                 Button(AppBranding.current.rebranded(String(localized: "menu.app.about", defaultValue: "About cmux"))) {
                     showAboutPanel()
                 }
-                Button(String(localized: "menu.app.checkForUpdates", defaultValue: "Check for Updates…")) {
-                    appDelegate.checkForUpdates(nil)
+                if AppBranding.current.offersManaflowServices {
+                    Button(String(localized: "menu.app.checkForUpdates", defaultValue: "Check for Updates…")) {
+                        appDelegate.checkForUpdates(nil)
+                    }
                 }
                 InstallUpdateMenuItem(model: appDelegate.updateViewModel, actions: appDelegate)
             }

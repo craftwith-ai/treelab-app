@@ -41,19 +41,19 @@ public struct SettingsWindowRoot: View {
         self.runtime = runtime
         self.searchIndex = runtime.searchIndex
         self.initialSection = initialSection
-        _pendingInitialSection = State(initialValue: initialSection)
+        _pendingInitialSection = State(initialValue: initialSection?.shown())
         _searchQuery = State(initialValue: SettingsSearchQuery(index: runtime.searchIndex))
         // The `@AppStorage` properties below read the same store; the restore
         // target has to be known before the first body evaluation because
         // that pass runs inside `NSWindow(contentViewController:)`.
         let defaults = UserDefaults.standard
-        let restoredSection = defaults.string(forKey: Self.selectedSectionDefaultsKey)
-            .flatMap(SettingsSectionID.init(rawValue:)) ?? .account
+        let restoredSection = (defaults.string(forKey: Self.selectedSectionDefaultsKey)
+            .flatMap(SettingsSectionID.init(rawValue:)) ?? .account).shown()
         let cloudAvailable = !ManagedDevicePolicy().isEnforced(.disableCloud)
             && runtime.hostActions.isCloudMachinesAvailable
         _mountModel = State(initialValue: mountModel ?? SettingsSectionMountModel(
-            initial: initialSection ?? restoredSection,
-            order: Self.mountOrder(cloudAvailable: cloudAvailable)
+            initial: initialSection?.shown() ?? restoredSection,
+            order: Self.mountOrder(cloudAvailable: cloudAvailable).filter { !SettingsSectionID.hidden().contains($0) }
         ))
     }
     /// A targeted open's section, shown until the first navigation request
@@ -133,7 +133,7 @@ public struct SettingsWindowRoot: View {
     /// defaulting to ``SettingsSectionID/account`` when the stored value
     /// is unrecognized (e.g., after dropping a case).
     var selectedSection: SettingsSectionID {
-        SettingsSectionID(rawValue: selectedSectionRaw) ?? .account
+        (SettingsSectionID(rawValue: selectedSectionRaw) ?? .account).shown()
     }
     /// The section whose pane the detail shows.
     var activeSection: SettingsSectionID {
@@ -224,7 +224,7 @@ public struct SettingsWindowRoot: View {
     /// ``applyScrollNavigation(_:proxy:)`` turns the same request into a
     /// scroll, so one observer handles both halves.
     private func applyNavigationRequest(_ notification: Notification) {
-        guard let target = SettingsSectionID.navigationDestination(userInfo: notification.userInfo)?.section else {
+        guard let target = SettingsSectionID.navigationDestination(userInfo: notification.userInfo)?.section.shown() else {
             return
         }
         pendingInitialSection = nil
@@ -242,8 +242,8 @@ public struct SettingsWindowRoot: View {
         navigate(to: target, preferSectionSelection: !shouldPreserveSearchSelection)
     }
 
-    /// Moves a selection that rests on an unavailable Cloud section to Account,
-    /// both at first render and on a transition.
+    /// Moves a selection that rests on an unavailable Cloud section, or on a section the brand
+    /// hides, to the landing section, both at first render and on a transition.
     private func leaveCloudSectionIfDisabledByPolicy() {
         if !isCloudSectionAvailable {
             // If the Cloud slot is the outstanding progressive mount, its
@@ -252,7 +252,10 @@ public struct SettingsWindowRoot: View {
             _ = mountModel.skip(.cloudMachines)
         }
         if !isCloudSectionAvailable && selectedSection == .cloudMachines {
-            navigate(to: .account)
+            navigate(to: SettingsSectionID.landing())
+        }
+        if let stored = SettingsSectionID(rawValue: selectedSectionRaw), stored != stored.shown() {
+            navigate(to: stored.shown())
         }
     }
 

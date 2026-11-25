@@ -117,8 +117,10 @@ enum SettingsSidebarEntryVisibility {
     static func isVisible(
         _ entry: SettingsSearchIndex.Entry,
         isCloudSectionAvailable: Bool,
-        isChiefAvailable: Bool
+        isChiefAvailable: Bool,
+        hiddenSections: Set<SettingsSectionID> = SettingsSectionID.hidden()
     ) -> Bool {
+        if isInHiddenSection(entry, hidden: hiddenSections) { return false }
         if !isChiefAvailable, entry.id.hasPrefix(chiefEntryIDPrefix) { return false }
         guard !isCloudSectionAvailable else { return true }
         switch entry.kind {

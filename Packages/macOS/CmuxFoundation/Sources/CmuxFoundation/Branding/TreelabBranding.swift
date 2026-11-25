@@ -32,6 +32,10 @@ public struct AppBranding: Equatable, Sendable {
     /// the remote feature flags), automatic updates and AI credential upload. SSH and Mosh stay
     /// (`DisableRemoteConnections` is not forced). Upstream cmux forces nothing.
     public let forcedManagedPolicyKeys: Set<String>
+    /// Whether the app offers Manaflow's services in its interface: account and sign-in,
+    /// the Pro offer, feedback, update checks, and the Settings sections for mobile, Cloud,
+    /// devices and networking. Treelab hides those entries (their code stays).
+    public let offersManaflowServices: Bool
 
     /// Upstream cmux, values unchanged.
     public static let cmux = AppBranding(
@@ -41,7 +45,8 @@ public struct AppBranding: Equatable, Sendable {
         applicationSupportDirectoryName: "cmux",
         socketPrefix: "cmux",
         urlScheme: "cmux",
-        forcedManagedPolicyKeys: []
+        forcedManagedPolicyKeys: [],
+        offersManaflowServices: true
     )
 
     /// The Treelab fork.
@@ -61,7 +66,8 @@ public struct AppBranding: Equatable, Sendable {
             "DisableTelemetry",
             "DisableAutoUpdate",
             "DisableAICredentialUpload",
-        ]
+        ],
+        offersManaflowServices: true
     )
 
     /// The stable socket file name inside ``stateDirectory(homeDirectory:)``.
