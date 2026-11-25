@@ -18,11 +18,14 @@ Each "cmux" is classified with scripts/treelab/brand/rules.json:
   fichier   a technical name glued to other characters (cmux.json, cmux-tui, ~/.cmuxterm, CMUX_*),
 and any other one names the app: "apply" replaces it with the brand name, "check" counts it as
 unexplained. A key of rules.json "key_overrides" whose text still names cmux takes the override's
-text instead (the accent color named "cmux Blue" is the brand's accent, not blue). Format
+text instead (the accent color named "cmux Blue" is the brand's accent, not blue). A package key
+naming cmux that the app's main Localizable table lacks is added to it, translated and branded:
+upstream code that looks it up without `bundle:` would otherwise show its English default. Format
 specifiers are never touched; each file keeps its format and encoding and is written only when
 it changes, so a second pass changes nothing.
 
-apply prints "changed: <path>" per rewritten file, then CHANGED_FILES= and REPLACED=.
+apply prints "changed: <path>" per rewritten file, then CHANGED_FILES=, REPLACED= and
+ADDED_PACKAGE_KEYS=.
 check prints "CLASS <name>=<count>" per class, UNEXPLAINED=<count> and up to 25 examples;
 it exits 1 when one "cmux" is unexplained. Both exit 2 on a usage or read error.
 """
@@ -249,8 +252,45 @@ def markup_spans(rules: Rules, kind: str, text: str):
     return [(m.start(1), m.end(1)) for m in pattern.finditer(text)]
 
 
+def package_fallbacks(rules: Rules, app: Path) -> dict[str, dict[str, str]]:
+    """Package keys naming cmux that the app's main tables lack, per main-table language.
+
+    Some upstream package code calls String(localized:defaultValue:) without `bundle:`, so the
+    lookup reads the app's main Localizable table, misses, and shows the English default compiled
+    in the binary, cmux included. Each such key (English value naming cmux, not a CLI text) is
+    planned for every main language with the package's own translation, else its English text.
+    Read before any rewrite, so the plan is the same whatever the order of the files.
+    """
+    resources = app / "Contents" / "Resources"
+    languages = sorted(p.name[: -len(".lproj")] for p in resources.glob("*.lproj")
+                       if (p / "Localizable.strings").is_file())
+    main_keys = {lang: set(load_plist(resources / f"{lang}.lproj" / "Localizable.strings")[0])
+                 for lang in languages}
+    plan: dict[str, dict[str, str]] = {}
+    for bundle in sorted(resources.glob("*.bundle")):
+        bundle_resources = bundle / "Contents" / "Resources"
+        english_path = bundle_resources / "en.lproj" / "Localizable.strings"
+        if not english_path.is_file():
+            continue
+        english = load_plist(english_path)[0]
+        candidates = {k: v for k, v in english.items()
+                      if isinstance(v, str) and rules.pattern.search(v) and not rules.is_cli_key(k)}
+        if not candidates:
+            continue
+        for lang in languages:
+            local_path = bundle_resources / f"{lang}.lproj" / "Localizable.strings"
+            local = load_plist(local_path)[0] if local_path.is_file() else {}
+            for key, text in candidates.items():
+                if key in main_keys[lang]:
+                    continue
+                translated = local.get(key)
+                plan.setdefault(lang, {}).setdefault(key, translated if isinstance(translated, str) else text)
+    return plan
+
+
 def apply(rules: Rules, app: Path, brand: str) -> int:
     changed_files, replaced_total = 0, 0
+    fallbacks = package_fallbacks(rules, app)
     for kind, path in text_files(app):
         replaced = 0
         if kind in ("strings", "info"):
@@ -283,8 +323,25 @@ def apply(rules: Rules, app: Path, brand: str) -> int:
             changed_files += 1
             replaced_total += replaced
             print(f"changed: {path.relative_to(app)}")
+    added_total = 0
+    for lang, entries in sorted(fallbacks.items()):
+        path = app / "Contents" / "Resources" / f"{lang}.lproj" / "Localizable.strings"
+        data, form = load_plist(path)
+        added = 0
+        for key, text in entries.items():
+            if key in data:
+                continue
+            override = rules.override(key, lang, brand)
+            data[key] = override if override is not None else rebrand(rules, text, key, brand)[0]
+            added += 1
+        if added:
+            path.write_bytes(dump_plist(data, form))
+            changed_files += 1
+            added_total += added
+            print(f"added: {added} package keys to {path.relative_to(app)}")
     print(f"CHANGED_FILES={changed_files}")
     print(f"REPLACED={replaced_total}")
+    print(f"ADDED_PACKAGE_KEYS={added_total}")
     return 0
 
 

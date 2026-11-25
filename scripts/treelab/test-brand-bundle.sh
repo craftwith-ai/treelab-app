@@ -4,7 +4,9 @@
 # .stringsdict plurals, Info.plist and InfoPlist.strings, a nested resource bundle, the nested
 # Computer Use helper, the AppleScript dictionary (.sdef) and an HTML page title.
 #   A. "cmux" naming the app becomes the brand name in English, French, German, Japanese, Arabic,
-#      and the keys of rules.json "key_overrides" take their text (the accent is not blue);
+#      the keys of rules.json "key_overrides" take their text (the accent is not blue), and a
+#      package key naming cmux that the main table lacks is added to it (upstream calls without
+#      bundle: read the main table);
 #   B. technical names stay: `code`, quoted commands, cmux.json, cmux-tui, ~/.cmuxterm, paths,
 #      addresses, CMUX_* variables, identifiers, "Usage: cmux", every cli.* key, the GPL line;
 #   C. format specifiers (%@, %1$@, %#@n@) and each file's format and encoding are kept,
@@ -118,6 +120,18 @@ write(os.path.join(res, "ar.lproj", "Localizable.strings"), {
 write(os.path.join(res, "CmuxFoundation_CmuxFoundation.bundle", "Contents", "Resources", "en.lproj", "Localizable.strings"), {
     "nested": "cmux could not reach the server.",
 }, "xml-utf16")
+# A package catalog whose keys some upstream calls look up in the app's main table (no bundle:).
+sub = os.path.join(res, "CmuxSettingsUI_CmuxSettingsUI.bundle", "Contents", "Resources")
+write(os.path.join(sub, "en.lproj", "Localizable.strings"), {
+    "settings.sub.note": "cmux keeps it.",
+    "settings.sub.plain": "No brand here.",
+    "quit": "Quit cmux (package copy)",
+    "cli.sub.help": "cmux sub-command",
+}, "xml-utf16")
+write(os.path.join(sub, "fr.lproj", "Localizable.strings"), {
+    "settings.sub.note": "cmux le garde.",
+    "settings.sub.plain": "Pas de marque ici.",
+}, "xml-utf16")
 write(os.path.join(app, "Contents", "Library", "cmux Computer Use.app", "Contents", "Resources", "en.lproj", "InfoPlist.strings"), {
     "NSAccessibilityUsageDescription": "cmux Computer Use controls apps only when you ask.",
 }, "openstep")
@@ -201,6 +215,16 @@ expect_value Contents/Resources/fr.lproj/Localizable.strings settings.app.accent
 expect_value Contents/Resources/ja.lproj/Localizable.strings settings.app.accentColor.cmux "Treelab"
 expect_value "$EN" settings.notifications.paneFlashThemeColor.subtitle \
   "Use the terminal theme foreground for flashes; unread rings keep the accent color."
+
+# A3. Package keys naming cmux and missing from the main table are added to it, translated.
+expect_value "$EN" settings.sub.note "Treelab keeps it."
+expect_value Contents/Resources/fr.lproj/Localizable.strings settings.sub.note "Treelab le garde."
+expect_value Contents/Resources/de.lproj/Localizable.strings settings.sub.note "Treelab keeps it."
+expect_value Contents/Resources/ja.lproj/Localizable.strings settings.sub.note "Treelab keeps it."
+expect_value "$EN" quit "Quit Treelab"
+for missing in settings.sub.plain cli.sub.help; do
+  if value "$APP/$EN" "$missing" >/dev/null 2>&1; then fail "$missing copied to the main table"; else pass "$missing not copied"; fi
+done
 
 # B. Technical names stay.
 expect_value "$EN" backtick "Run \`cmux docs settings\` to list them."
