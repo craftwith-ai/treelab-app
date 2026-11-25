@@ -4,7 +4,8 @@
     "(replaced by the brand name) and which is a technical name that stays (counted by class).",
     "Order of the classes: cli, gpl, commande, adresse, fichier; anything else is the app's name.",
     "cli_commands: first words of the internal CLI's commands (`cmux --help`), a command when quoted.",
-    "prose_commands: commands written without quotes in upstream texts ('run cmux automation reload')."
+    "prose_commands: commands written without quotes in upstream texts ('run cmux automation reload').",
+    "key_overrides: text set for a key while upstream's still names cmux, per language ('*' = any); {name} = brand."
   ],
   "upstream_name": "cmux",
   "cli_key_patterns": [
@@ -227,5 +228,21 @@
   ],
   "html_elements": [
     "title"
-  ]
+  ],
+  "key_overrides": {
+    "settings.app.accentColor.cmux": {
+      "*": "{name}"
+    },
+    "settings.notifications.paneFlashThemeColor.subtitle": {
+      "en": "Use the terminal theme foreground for flashes; unread rings keep the accent color.",
+      "fr": "Utiliser le premier plan du thème du terminal pour les flashs ; les anneaux non lus gardent la couleur d'accent.",
+      "de": "Verwende die Vordergrundfarbe des Terminaldesigns für Blitze; ungelesene Ringe behalten die Akzentfarbe.",
+      "es": "Usa el primer plano del tema de la terminal para los destellos; los anillos no leídos conservan el color de acento.",
+      "ar": "استخدم مقدمة سمة الطرفية للومضات؛ تحتفظ حلقات عدم القراءة بلون التمييز.",
+      "ja": "フラッシュにターミナルテーマの前景色を使い、未読リングはアクセントカラーのままにします。",
+      "ko": "플래시에 터미널 테마 전경색을 사용하며 읽지 않은 링은 강조 색상으로 유지합니다.",
+      "zh-Hans": "使用终端主题前景色显示闪烁；未读环保持强调色。",
+      "zh-Hant": "使用終端主題前景色顯示閃爍；未讀環維持強調色。"
+    }
+  }
 }

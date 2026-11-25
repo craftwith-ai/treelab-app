@@ -3,7 +3,8 @@
 # found in a built cmux.app: binary, XML (UTF-8 and UTF-16 with BOM) and old-style .strings,
 # .stringsdict plurals, Info.plist and InfoPlist.strings, a nested resource bundle, the nested
 # Computer Use helper, the AppleScript dictionary (.sdef) and an HTML page title.
-#   A. "cmux" naming the app becomes the brand name in English, French, German, Japanese, Arabic;
+#   A. "cmux" naming the app becomes the brand name in English, French, German, Japanese, Arabic,
+#      and the keys of rules.json "key_overrides" take their text (the accent is not blue);
 #   B. technical names stay: `code`, quoted commands, cmux.json, cmux-tui, ~/.cmuxterm, paths,
 #      addresses, CMUX_* variables, identifiers, "Usage: cmux", every cli.* key, the GPL line;
 #   C. format specifiers (%@, %1$@, %#@n@) and each file's format and encoding are kept,
@@ -79,6 +80,8 @@ write(os.path.join(res, "en.lproj", "Localizable.strings"), {
     "gpl": "Based on cmux by Manaflow — GPL-3.0-or-later",
     "cli.help.open": "cmux opens a workspace",
     "glaeda.cli.usage": "cmux glaeda request",
+    "settings.app.accentColor.cmux": "cmux Blue",
+    "settings.notifications.paneFlashThemeColor.subtitle": "Use the terminal theme foreground for flashes; unread rings stay cmux blue.",
 }, "binary")
 write(os.path.join(res, "en.lproj", "InfoPlist.strings"), {
     "NSCameraUsageDescription": "A program running within cmux would like to use your camera.",
@@ -98,6 +101,7 @@ write(os.path.join(res, "fr.lproj", "Localizable.strings"), {
     "quit": "Quitter cmux",
     "format": "%1$@ ouvert dans cmux",
     "backtick": "Exécutez `cmux docs settings` pour les lister.",
+    "settings.app.accentColor.cmux": "Bleu cmux",
 }, "xml-utf16")
 write(os.path.join(res, "de.lproj", "Localizable.strings"), {
     "profile": "Das cmux-Browserprofil fehlt.",
@@ -105,6 +109,7 @@ write(os.path.join(res, "de.lproj", "Localizable.strings"), {
 write(os.path.join(res, "ja.lproj", "Localizable.strings"), {
     "launch": "cmuxを起動",
     "installCLI": "シェルコマンド: 'cmux'をPATHにインストール",
+    "settings.app.accentColor.cmux": "cmux ブルー",
 }, "openstep")
 write(os.path.join(res, "ar.lproj", "Localizable.strings"), {
     "lost": "فقد CMUX الاتصال بالامتداد.",
@@ -149,7 +154,7 @@ expect_value() {
   if [[ "$got" == "$want" ]]; then pass "$file $key = $want"; else fail "$file $key = '$got', want '$want'"; fi
 }
 tree_hash() { (cd "$APP" && find . -type f -print0 | sort -z | xargs -0 shasum -a 256 | shasum -a 256); }
-format_of() { head -c 6 "$1" | xxd -p; }
+format_of() { head -c 1 "$1" | xxd -p; }   # b(plist), UTF-16 BOM (ff), " (old-style) or < (XML)
 
 EN=Contents/Resources/en.lproj/Localizable.strings
 FORMATS_BEFORE="$(for f in "$APP"/Contents/Resources/{en,fr,de,ja,ar}.lproj/Localizable.strings; do format_of "$f"; done)"
@@ -189,6 +194,13 @@ expect_value Contents/Info.plist NSServices/0/NSMenuItem/default "New Treelab Wo
 expect_value Contents/Info.plist UTExportedTypeDeclarations/0/UTTypeDescription "Treelab Surface Resource"
 expect_value Contents/Resources/en.lproj/Localizable.stringsdict windows.count/n/one "%lld Treelab window"
 expect_value Contents/Resources/en.lproj/Localizable.stringsdict windows.count/n/other "%lld Treelab windows"
+
+# A2. Key overrides (rules.json): a color named after cmux becomes the brand's accent.
+expect_value "$EN" settings.app.accentColor.cmux "Treelab"
+expect_value Contents/Resources/fr.lproj/Localizable.strings settings.app.accentColor.cmux "Treelab"
+expect_value Contents/Resources/ja.lproj/Localizable.strings settings.app.accentColor.cmux "Treelab"
+expect_value "$EN" settings.notifications.paneFlashThemeColor.subtitle \
+  "Use the terminal theme foreground for flashes; unread rings keep the accent color."
 
 # B. Technical names stay.
 expect_value "$EN" backtick "Run \`cmux docs settings\` to list them."
@@ -231,7 +243,7 @@ expect_value "$EN" format "%@ opened in Treelab (%1\$@)"
 expect_value Contents/Resources/fr.lproj/Localizable.strings format "%1\$@ ouvert dans Treelab"
 expect_value Contents/Resources/en.lproj/Localizable.stringsdict windows.count/NSStringLocalizedFormatKey "%#@n@ open in Treelab"
 FORMATS_AFTER="$(for f in "$APP"/Contents/Resources/{en,fr,de,ja,ar}.lproj/Localizable.strings; do format_of "$f"; done)"
-if [[ "$FORMATS_BEFORE" == "$FORMATS_AFTER" ]]; then pass "file formats kept (binary, UTF-16 BOM, old-style)"; else fail "file formats changed"; fi
+if [[ "$FORMATS_BEFORE" == "$FORMATS_AFTER" ]]; then pass "file formats kept (binary, UTF-16 BOM, old-style)"; else fail "file formats changed: $(echo $FORMATS_BEFORE) -> $(echo $FORMATS_AFTER)"; fi
 if [[ "$(head -c 1 "$APP/Contents/Resources/ja.lproj/Localizable.strings")" == '"' ]]; then
   pass "old-style .strings stays old-style"
 else

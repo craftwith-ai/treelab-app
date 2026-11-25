@@ -17,8 +17,10 @@ Each "cmux" is classified with scripts/treelab/brand/rules.json:
   adresse   a web or mail address (cmux.com, support@cmux.com, https://github.com/.../cmux),
   fichier   a technical name glued to other characters (cmux.json, cmux-tui, ~/.cmuxterm, CMUX_*),
 and any other one names the app: "apply" replaces it with the brand name, "check" counts it as
-unexplained. Format specifiers are never touched; each file keeps its format and encoding and
-is written only when it changes, so a second pass changes nothing.
+unexplained. A key of rules.json "key_overrides" whose text still names cmux takes the override's
+text instead (the accent color named "cmux Blue" is the brand's accent, not blue). Format
+specifiers are never touched; each file keeps its format and encoding and is written only when
+it changes, so a second pass changes nothing.
 
 apply prints "changed: <path>" per rewritten file, then CHANGED_FILES= and REPLACED=.
 check prints "CLASS <name>=<count>" per class, UNEXPLAINED=<count> and up to 25 examples;
@@ -69,6 +71,15 @@ class Rules:
         self.info_keys = [re.compile(p) for p in data["info_plist_visible_keys"]]
         self.sdef_attributes = data["sdef_attributes"]
         self.html_elements = data["html_elements"]
+        self.key_overrides = data.get("key_overrides", {})
+
+    def override(self, key: str, language: str | None, brand: str) -> str | None:
+        """The text a key takes in `language` (a key_overrides entry), or None."""
+        entry = self.key_overrides.get(key)
+        if not entry:
+            return None
+        text = entry.get(language or "", entry.get("*"))
+        return None if text is None else text.replace("{name}", brand)
 
     def is_cli_key(self, key: str) -> bool:
         return any(p.search(key) for p in self.cli_keys)
@@ -208,6 +219,14 @@ def text_files(app: Path):
                 yield "html", path
 
 
+def lproj_language(path: Path) -> str | None:
+    """The language of a file inside `<language>.lproj`, or None."""
+    for part in reversed(path.parts):
+        if part.endswith(".lproj"):
+            return part[: -len(".lproj")]
+    return None
+
+
 def plist_units(rules: Rules, kind: str, path: Path):
     data, form = load_plist(path)
     units = []
@@ -236,8 +255,13 @@ def apply(rules: Rules, app: Path, brand: str) -> int:
         replaced = 0
         if kind in ("strings", "info"):
             data, form, units = plist_units(rules, kind, path)
+            language = lproj_language(path)
             for leaf_path, key, text in units:
-                new, count = rebrand(rules, text, key, brand)
+                override = rules.override(key, language, brand) if kind == "strings" and len(leaf_path) == 1 else None
+                if override is not None and rules.pattern.search(text):
+                    new, count = override, 1
+                else:
+                    new, count = rebrand(rules, text, key, brand)
                 if count:
                     data = replace_leaf(data, leaf_path, new)
                     replaced += count
