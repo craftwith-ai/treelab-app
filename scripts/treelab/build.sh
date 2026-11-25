@@ -32,6 +32,11 @@ UPSTREAM_BUNDLE_ID="com.cmuxterm.app"
 
 cd "$ROOT"
 
+# Submodules first: the Zig pin below is read from ghostty/build.zig.zon, absent in a fresh clone.
+echo "==> Submodules (ghostty, vendor/bonsplit)"
+env -i HOME="$HOME" PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" \
+  git submodule update --init ghostty vendor/bonsplit
+
 # One environment for every tool below: the user's PATH and home, nothing from cmux.
 RUSTUP_BIN="$(brew --prefix rustup 2>/dev/null || echo /opt/homebrew/opt/rustup)/bin"
 # Ghostty pins Zig by major.minor (ghostty/build.zig.zon); Homebrew's plain `zig` is often newer.
@@ -65,9 +70,6 @@ run cargo --version >/dev/null || { echo "error: cargo not found (rustup default
 DIFF_RUST_TOOLCHAIN="$(awk -F '"' '/^[[:space:]]*channel[[:space:]]*=/{print $2; exit}' Native/DiffSidecar/rust-toolchain.toml)"
 run rustup toolchain install "$DIFF_RUST_TOOLCHAIN" --profile minimal --component clippy,rustfmt >/dev/null
 run rustup target add --toolchain "$DIFF_RUST_TOOLCHAIN" aarch64-apple-darwin x86_64-apple-darwin >/dev/null
-
-echo "==> Submodules (ghostty, vendor/bonsplit)"
-run git submodule update --init ghostty vendor/bonsplit
 
 echo "==> GhosttyKit (pinned prebuilt, Zig build as fallback)"
 run "$ROOT/scripts/ensure-ghosttykit.sh"
@@ -118,18 +120,10 @@ for ((i = 0; i < count; i++)); do
 done
 
 echo "==> Ad hoc signature"
-# Like upstream's ad hoc Release (scripts/reload.sh), the app is built without entitlements:
-# keychain groups and personal-information access need a signing team.
-ENTITLEMENTS="$(mktemp "${TMPDIR:-/tmp}/treelab-entitlements.XXXXXX")"
-trap 'rm -f "$ENTITLEMENTS"' EXIT
-/usr/bin/codesign -d --entitlements :- "$BUILT_APP" 2>/dev/null > "$ENTITLEMENTS" || true
-if [[ -s "$ENTITLEMENTS" ]]; then
-  # Any group named after the bundle id follows it, so Treelab never shares cmux's items.
-  sed -i '' "s/>${UPSTREAM_BUNDLE_ID//./\\.}</>${BUNDLE_ID}</g" "$ENTITLEMENTS"
-  /usr/bin/codesign --force --sign - --timestamp=none --entitlements "$ENTITLEMENTS" "$APP"
-else
-  /usr/bin/codesign --force --sign - --timestamp=none "$APP"
-fi
+# Like upstream's ad hoc Release (scripts/reload.sh), the app is built without entitlements
+# (CODE_SIGN_ENTITLEMENTS= above): keychain groups and personal-information access need a
+# signing team. check-identity.sh fails if any entitlement still names cmux.
+/usr/bin/codesign --force --sign - --timestamp=none "$APP"
 
 LINKS_AFTER="$(links_state)"
 if [[ "$LINKS_BEFORE" != "$LINKS_AFTER" ]]; then

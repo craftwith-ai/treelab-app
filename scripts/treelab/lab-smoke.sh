@@ -56,12 +56,23 @@ tl() {
     CMUX_SOCKET_PATH="$SOCKET" "$CLI" "$@"
 }
 
-# The user's cmux, read only, through its own ambient environment: ids, never titles.
+# The user's cmux, read only (`tree`), through its own CLI and its own socket named explicitly,
+# so neither PATH nor an inherited CMUX_SOCKET_PATH can turn this into a vacuous or wrong check.
+# Ids only, never titles.
+USER_CMUX_CLI="${USER_CMUX_CLI:-/Applications/cmux.app/Contents/Resources/bin/cmux}"
+USER_CMUX_SOCKET="$(cat "$HOME/.local/state/cmux/last-socket-path" 2>/dev/null || true)"
+USER_CMUX_SOCKET="${USER_CMUX_SOCKET:-$HOME/.local/state/cmux/cmux.sock}"
+[[ -x "$USER_CMUX_CLI" ]] || fail "user's cmux CLI not found: $USER_CMUX_CLI"
+[[ -S "$USER_CMUX_SOCKET" ]] || fail "user's cmux socket not found: $USER_CMUX_SOCKET"
+[[ "$USER_CMUX_SOCKET" != "$SOCKET" ]] || fail "user's cmux socket is the Treelab socket"
 user_cmux_fingerprint() {
-  command -v cmux >/dev/null 2>&1 || { echo "no-cmux-cli"; return; }
-  cmux tree --all 2>/dev/null | grep -oE '(window|workspace|pane|surface):[0-9A-Za-z-]+' | sort | shasum -a 256 | cut -c1-16
+  local ids
+  ids="$(CMUX_SOCKET_PATH="$USER_CMUX_SOCKET" "$USER_CMUX_CLI" tree --all 2>/dev/null \
+    | grep -oE '(window|workspace|pane|surface):[0-9A-Za-z-]+' | sort)" || return 1
+  grep -q '^window:' <<<"$ids" || return 1
+  shasum -a 256 <<<"$ids" | cut -c1-16
 }
-USER_CMUX_BEFORE="$(user_cmux_fingerprint)"
+USER_CMUX_BEFORE="$(user_cmux_fingerprint)" || fail "cannot read the user's cmux tree ($USER_CMUX_SOCKET)"
 
 [[ "$(tl ping)" == "PONG" ]] || fail "Treelab does not answer ping"
 ok "ping -> PONG"
@@ -113,7 +124,7 @@ tl read-screen --workspace "$WORKSPACE" --surface "$SURFACE" | grep -qx "$MARK-4
   || fail "read-screen does not show the command output $MARK-42"
 ok "4. message in inbox, command ran: read-screen shows $MARK-42"
 
-USER_CMUX_AFTER="$(user_cmux_fingerprint)"
+USER_CMUX_AFTER="$(user_cmux_fingerprint)" || fail "cannot read the user's cmux tree after the gestures"
 [[ "$USER_CMUX_BEFORE" == "$USER_CMUX_AFTER" ]] \
   || fail "the user's cmux tree changed ($USER_CMUX_BEFORE -> $USER_CMUX_AFTER)"
 ok "user's cmux tree ids unchanged ($USER_CMUX_AFTER)"
