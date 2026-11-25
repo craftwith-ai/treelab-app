@@ -52,7 +52,16 @@ public struct AppBranding: Equatable, Sendable {
         applicationSupportDirectoryName: "sh.treelab.app",
         socketPrefix: "treelab",
         urlScheme: "treelab",
-        forcedManagedPolicyKeys: []
+        forcedManagedPolicyKeys: [
+            "DisableCloud",
+            "DisableRemoteControl",
+            "DisableIrohNetworking",
+            "DisableDeviceDiscovery",
+            "DisableIncomingDeviceAccess",
+            "DisableTelemetry",
+            "DisableAutoUpdate",
+            "DisableAICredentialUpload",
+        ]
     )
 
     /// The stable socket file name inside ``stateDirectory(homeDirectory:)``.
