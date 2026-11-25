@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Checks a built Treelab.app: arm64, ad hoc signature that verifies, sh.treelab.app,
-# named Treelab, empty update feed, treelab URL scheme, own keychain group.
-# Exits non-zero at the first mismatch.
+# named Treelab, empty update feed, treelab URL scheme, own keychain group,
+# no PostHog or Sentry SDK (files, symbols, collection domains).
+# Exits non-zero at the first mismatch (every SDK leftover is listed before failing).
 #
 # Usage: scripts/treelab/check-identity.sh [path/to/Treelab.app]
 set -euo pipefail
@@ -57,5 +58,26 @@ ok "entitlements do not name com.cmuxterm.app"
 
 [[ -x "$APP/Contents/Resources/bin/cmux" ]] || fail "bundled CLI missing (Contents/Resources/bin/cmux)"
 ok "bundled CLI present"
+
+# No measurement tool ships: no PostHog or Sentry file (CmuxSentryScrubbing has no SDK and may
+# stay), and no executable names their SDK or their collection domains. Every finding is listed.
+sdk_findings=()
+while IFS= read -r path; do
+  sdk_findings+=("file ${path#"$APP"/}")
+done < <(find "$APP" \( -iname '*posthog*' -o -iname '*sentry*' \) ! -iname '*CmuxSentryScrubbing*' | sort)
+while IFS= read -r -d '' binary; do
+  file -b "$binary" | grep -q '^Mach-O' || continue
+  label="${binary#"$APP"/}"
+  for symbol in PostHogSDK SentrySDK; do
+    if LC_ALL=C grep -a -q "$symbol" "$binary"; then sdk_findings+=("symbol $symbol in $label"); fi
+  done
+  domains="$(LC_ALL=C strings -a "$binary" | grep -E -i -o '[a-z0-9.-]*(posthog\.com|sentry\.io)([^a-z0-9-]|$)' | sort -u | tr '\n' ' ' || true)"
+  [[ -z "$domains" ]] || sdk_findings+=("domains in $label: $domains")
+done < <(find "$APP/Contents/MacOS" "$APP/Contents/Resources/bin" "$APP/Contents/Frameworks" -type f -print0)
+if ((${#sdk_findings[@]} > 0)); then
+  printf 'FAIL: measurement SDK leftover: %s\n' "${sdk_findings[@]}" >&2
+  exit 1
+fi
+ok "no PostHog or Sentry file, symbol or collection domain"
 
 echo "PASS: $APP"
