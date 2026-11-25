@@ -138,6 +138,12 @@ import Testing
 
     // MARK: Shortcuts
 
+    @Test func treelabNamesTheQuitShortcutAfterItself() {
+        #expect(ShortcutAction.quitDisplayName(branding: .treelab) == "Quit Treelab")
+        #expect(ShortcutAction.quitDisplayName(branding: .cmux) == "Quit cmux")
+        #expect(ShortcutAction.quit.displayName == ShortcutAction.quitDisplayName(branding: .current))
+    }
+
     @Test func treelabHidesTheSendFeedbackShortcut() {
         #expect(ShortcutAction.brandUnavailableActions(branding: .treelab) == [.sendFeedback])
         #expect(ShortcutAction.brandUnavailableActions(branding: .cmux).isEmpty)

@@ -10,4 +10,11 @@ extension ShortcutAction {
     public static func brandUnavailableActions(branding: AppBranding) -> Set<ShortcutAction> {
         branding.offersManaflowServices ? [] : [.sendFeedback]
     }
+
+    /// The Settings name of the Quit shortcut ("Quit cmux" upstream, the brand's name otherwise).
+    ///
+    /// - Parameter branding: The app's brand.
+    public static func quitDisplayName(branding: AppBranding) -> String {
+        branding.rebranded("Quit cmux")
+    }
 }
