@@ -29,8 +29,9 @@ import Testing
     }
 
     /// The policy names the commands the app actually registers, so a renamed command cannot
-    /// slip back into Treelab's palette.
-    @Test func treelabPaletteLeavesOutTheAppsAccountProAndUpdateCommands() {
+    /// slip back into Treelab's palette. Main actor: the settings-toggle table is built on the
+    /// main thread in the app, and its Debug initializer overflows a background thread's stack.
+    @Test @MainActor func treelabPaletteLeavesOutTheAppsAccountProAndUpdateCommands() {
         let appCommandIDs = [
             ContentView.commandPaletteAuthSignInCommandId,
             ContentView.commandPaletteAuthSignOutCommandId,
