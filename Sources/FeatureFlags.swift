@@ -546,7 +546,7 @@ final class CmuxFeatureFlags {
         if let value = Self.storedOverrideValue(for: Self.cloudMachinesFlag.key, defaults: defaults) {
             localOverridesByKey[Self.cloudMachinesFlag.key] = value
         }
-        remoteValuesByKey = pinsFlagsToLocalValues
+        remoteValuesByKey = pinsFlagsToLocalValues || !readsRemoteCache
             ? [:]
             : Self.allFlags.reduce(into: [:]) { values, definition in
                 if let value = Self.storedBoolValue(
