@@ -36,6 +36,77 @@ public struct AppBranding: Equatable, Sendable {
     /// the Pro offer, feedback, update checks, and the Settings sections for mobile, Cloud,
     /// devices and networking. Treelab hides those entries (their code stays).
     public let offersManaflowServices: Bool
+    /// The accent of the app's own chrome (`#RRGGBB` for light and dark appearances), drawn in the
+    /// default accent mode. `nil` keeps upstream's cmux blue.
+    public let accentHex: AppearancePair?
+    /// The terminal themes applied when the user has set no theme and no terminal color (the
+    /// light theme in a light appearance, the dark one otherwise). `nil` keeps upstream's.
+    public let defaultTerminalThemeNames: AppearancePair?
+    /// Whether the About panel credits upstream cmux by Manaflow under the GPL.
+    public let creditsUpstream: Bool
+    private let helpSite: HelpSite
+
+    private enum HelpSite: Equatable, Sendable { case cmux, treelab }
+
+    /// A value for the light appearance and one for the dark appearance.
+    public struct AppearancePair: Equatable, Sendable {
+        public let light: String
+        public let dark: String
+
+        public init(light: String, dark: String) {
+            self.light = light
+            self.dark = dark
+        }
+
+        /// The value for a light (`false`) or dark (`true`) appearance.
+        public func value(isDark: Bool) -> String { isDark ? dark : light }
+    }
+
+    /// Where the Help menus and the About panel send the user.
+    public struct HelpLinks: Equatable, Sendable {
+        /// The user guide.
+        public let docs: URL
+        /// What changed in each release.
+        public let changelog: URL
+        /// Where to ask for help or report a problem.
+        public let support: URL
+        /// The source repository.
+        public let source: URL
+        /// The community chat, or `nil` when the brand has none (its menu entry is hidden).
+        public let community: URL?
+
+        /// The source repository's page for one commit.
+        public func commit(_ hash: String) -> URL? {
+            URL(string: "\(source.absoluteString)/commit/\(hash)")
+        }
+    }
+
+    /// The help links for the app's display language (`fr`, `en`, `ja`, `pt-BR`…; `nil` = English).
+    public func helpLinks(languageCode: String?) -> HelpLinks {
+        switch helpSite {
+        case .cmux: return Self.cmuxHelpLinks
+        case .treelab: return Self.treelabHelpLinks(languageCode: languageCode)
+        }
+    }
+
+    /// The help links for the language the app is displayed in.
+    public var helpLinks: HelpLinks {
+        helpLinks(languageCode: Bundle.main.preferredLocalizations.first)
+    }
+
+    private static let cmuxHelpLinks = HelpLinks(
+        docs: URL(string: "https://cmux.com/docs")!,
+        changelog: URL(string: "https://cmux.com/docs/changelog")!,
+        support: URL(string: "https://github.com/manaflow-ai/cmux/issues")!,
+        source: URL(string: "https://github.com/manaflow-ai/cmux")!,
+        community: URL(string: "https://discord.gg/xsgFEVrWCZ")!
+    )
+
+    /// treelab.sh in French or English (the site's two languages); its release notes exist in
+    /// English only. Source on GitHub, no community chat.
+    private static func treelabHelpLinks(languageCode: String?) -> HelpLinks {
+        cmuxHelpLinks
+    }
 
     /// Upstream cmux, values unchanged.
     public static let cmux = AppBranding(
@@ -46,7 +117,11 @@ public struct AppBranding: Equatable, Sendable {
         socketPrefix: "cmux",
         urlScheme: "cmux",
         forcedManagedPolicyKeys: [],
-        offersManaflowServices: true
+        offersManaflowServices: true,
+        accentHex: nil,
+        defaultTerminalThemeNames: nil,
+        creditsUpstream: false,
+        helpSite: .cmux
     )
 
     /// The Treelab fork.
@@ -67,7 +142,11 @@ public struct AppBranding: Equatable, Sendable {
             "DisableAutoUpdate",
             "DisableAICredentialUpload",
         ],
-        offersManaflowServices: false
+        offersManaflowServices: false,
+        accentHex: nil,
+        defaultTerminalThemeNames: nil,
+        creditsUpstream: false,
+        helpSite: .treelab
     )
 
     /// The stable socket file name inside ``stateDirectory(homeDirectory:)``.

@@ -25,16 +25,20 @@ public struct CmuxAccentColor: Sendable, Hashable {
     public let mode: CmuxAccentColorMode
 
     /// Normalized `#RRGGBB` color drawn in ``CmuxAccentColorMode/custom``
-    /// mode. `nil` there falls back to cmux blue.
+    /// mode. `nil` there falls back to the brand accent.
     public let customHex: String?
+
+    /// The brand whose accent ``CmuxAccentColorMode/cmux`` draws (cmux blue upstream).
+    public let branding: AppBranding
 
     public init(mode: CmuxAccentColorMode = .defaultValue) {
         self.init(mode: mode, customHex: nil)
     }
 
-    public init(mode: CmuxAccentColorMode, customHex: String?) {
+    public init(mode: CmuxAccentColorMode, customHex: String?, branding: AppBranding = .current) {
         self.mode = mode
         self.customHex = CmuxAccentColorMode.normalizedCustomHex(customHex)
+        self.branding = branding
     }
 
     /// The accent stored in `defaults` (`app.accentColor`).
@@ -55,15 +59,21 @@ public struct CmuxAccentColor: Sendable, Hashable {
         )
     }
 
+    /// The brand's own accent for a light or dark appearance: cmux blue unless
+    /// the brand sets one (``AppBranding/accentHex``).
+    public static func brandAccent(isDark: Bool, branding: AppBranding = .current) -> NSColor {
+        branding.accentHex.flatMap { NSColor(hex: $0.value(isDark: isDark)) } ?? cmuxBlue(isDark: isDark)
+    }
+
     /// The accent for a light or dark appearance.
     public func nsColor(isDark: Bool) -> NSColor {
         switch mode {
         case .cmux:
-            return Self.cmuxBlue(isDark: isDark)
+            return Self.brandAccent(isDark: isDark, branding: branding)
         case .system:
             return Self.systemAccent(isDark: isDark)
         case .custom:
-            return customHex.flatMap { NSColor(hex: $0) } ?? Self.cmuxBlue(isDark: isDark)
+            return customHex.flatMap { NSColor(hex: $0) } ?? Self.brandAccent(isDark: isDark, branding: branding)
         }
     }
 

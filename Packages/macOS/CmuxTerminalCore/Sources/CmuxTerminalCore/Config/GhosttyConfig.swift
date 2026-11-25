@@ -447,8 +447,15 @@ public struct GhosttyConfig {
         )
     }
 
-    /// The cmux managed default theme name for `preferredColorScheme`.
-    public static func cmuxDefaultThemeName(preferredColorScheme: ColorSchemePreference) -> String {
+    /// The cmux managed default theme name for `preferredColorScheme`: the brand's
+    /// own themes when it has some (``AppBranding/defaultTerminalThemeNames``).
+    public static func cmuxDefaultThemeName(
+        preferredColorScheme: ColorSchemePreference,
+        branding: AppBranding = .current
+    ) -> String {
+        if let themes = branding.defaultTerminalThemeNames {
+            return themes.value(isDark: preferredColorScheme == .dark)
+        }
         switch preferredColorScheme {
         case .light:
             return cmuxDefaultLightThemeName
@@ -463,12 +470,14 @@ public struct GhosttyConfig {
     public static func cmuxDefaultThemeConfigContents(
         preferredColorScheme: ColorSchemePreference,
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        bundleResourceURL: URL? = Bundle.main.resourceURL
+        bundleResourceURL: URL? = Bundle.main.resourceURL,
+        branding: AppBranding = .current
     ) -> String {
         if let url = cmuxDefaultThemeConfigURL(
             preferredColorScheme: preferredColorScheme,
             environment: environment,
-            bundleResourceURL: bundleResourceURL
+            bundleResourceURL: bundleResourceURL,
+            branding: branding
         ), let contents = try? String(contentsOf: url, encoding: .utf8) {
             return contents
         }
@@ -481,9 +490,10 @@ public struct GhosttyConfig {
     public static func cmuxDefaultThemeConfigURL(
         preferredColorScheme: ColorSchemePreference,
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        bundleResourceURL: URL? = Bundle.main.resourceURL
+        bundleResourceURL: URL? = Bundle.main.resourceURL,
+        branding: AppBranding = .current
     ) -> URL? {
-        let themeName = cmuxDefaultThemeName(preferredColorScheme: preferredColorScheme)
+        let themeName = cmuxDefaultThemeName(preferredColorScheme: preferredColorScheme, branding: branding)
         for candidateName in themeNameCandidates(from: themeName) {
             for path in themeSearchPaths(
                 forThemeName: candidateName,
