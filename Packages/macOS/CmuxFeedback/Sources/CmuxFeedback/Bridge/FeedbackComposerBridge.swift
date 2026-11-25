@@ -1,4 +1,5 @@
 public import AppKit
+public import CmuxFoundation
 import Foundation
 
 /// Validates feedback input, drives ``FeedbackComposerClient`` to upload it, and
@@ -8,15 +9,20 @@ public struct FeedbackComposerBridge {
     /// The configured client the bridge uploads through.
     public let client: FeedbackComposerClient
     private let userDefaults: UserDefaults
+    /// False for a brand that does not offer Manaflow's services (Treelab):
+    /// feedback goes to Manaflow, so the composer stays closed and nothing is sent.
+    private let offersFeedback: Bool
 
     /// Creates a bridge over a feedback client and the defaults store the
     /// submitter's email is persisted in.
     public init(
         client: FeedbackComposerClient = FeedbackComposerClient(),
-        userDefaults: UserDefaults = .standard
+        userDefaults: UserDefaults = .standard,
+        branding: AppBranding = .current
     ) {
         self.client = client
         self.userDefaults = userDefaults
+        self.offersFeedback = branding.offersManaflowServices
     }
 
     private var settings: FeedbackComposerSettings { client.settings }
