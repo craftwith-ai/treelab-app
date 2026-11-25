@@ -17,7 +17,7 @@ while IFS= read -r name; do
   skip=0
   for excluded in "${EXCLUDED_CHECKS[@]}"; do [[ "$name" == "$excluded" ]] && skip=1; done
   ((skip)) || checks+=(--only "$name")
-done < <(python3 scripts/verify-local.py --list 2>/dev/null \
+done < <(python3 scripts/verify-local.py --all --list 2>/dev/null \
   | sed -nE 's/^([a-z0-9-]+): .+ \[(static_analysis|tests)\]$/\1/p')
 
 ((${#checks[@]} > 0)) || { echo "error: no check listed by scripts/verify-local.py --list" >&2; exit 1; }

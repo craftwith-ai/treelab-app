@@ -104,6 +104,29 @@ expect "C: dirty tree refused (rc != 0)" test "$rc" -ne 0
 expect "C: no merge started" test ! -e "$(git rev-parse --git-path MERGE_HEAD)"
 cd "$WORK"
 
+# D. upstream adds a BUSL folder: listed in LICENSE (workers/foo/) or only carrying its own
+#    BUSL LICENSE file (tools/bar/). The script must stop instead of committing BUSL code.
+new_pair d
+(
+  cd "$WORK/d-upstream"
+  mkdir -p workers/foo tools/bar
+  printf 'worker\n' > workers/foo/index.ts
+  printf 'Business Source License 1.1\n' > workers/foo/LICENSE
+  printf 'tool\n' > tools/bar/main.ts
+  printf 'Business Source License 1.1\n' > tools/bar/LICENSE
+  printf 'license\n\n  web/\n  workers/foo/\n  cmux-tui/relays/cloudflare-do/\n' > LICENSE
+  git add -A && git commit -q -m "upstream adds BUSL folders"
+)
+(cd "$WORK/d-fork" && git fetch -q upstream)
+rc=0; out="$(cd "$WORK/d-fork" && "$SCRIPT" upstream/main 2>/dev/null)" || rc=$?
+cd "$WORK/d-fork"
+expect "D: rc != 0" test "$rc" -ne 0
+expect "D: MERGE=busl-unknown" grep -qx 'MERGE=busl-unknown' <<< "$out"
+expect "D: folder listed in LICENSE named" grep -qx 'BUSL_UNKNOWN=workers/foo' <<< "$out"
+expect "D: folder with a BUSL LICENSE file named" grep -qx 'BUSL_UNKNOWN=tools/bar' <<< "$out"
+expect "D: merge left in place, nothing committed" test -e "$(git rev-parse --git-path MERGE_HEAD)"
+cd "$WORK"
+
 if ((failures > 0)); then
   echo "FAIL: $failures check(s)" >&2
   exit 1

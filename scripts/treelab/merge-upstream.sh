@@ -9,8 +9,10 @@
 #    upstream change to a file we deleted is a modify/delete conflict, resolved here alone;
 # 3. a conflict left anywhere else stops the script: exit code 1, merge left in place for a
 #    person to resolve (git merge --abort undoes it);
-# 4. otherwise the merge is committed (or left staged with --no-commit), exit code 0.
-# Prints KEY=value lines: BUSL_RESOLVED, BUSL_DROPPED, CONFLICTS, then MERGE=.
+# 4. so does a BUSL folder upstream added (listed in LICENSE, or with a BUSL LICENSE file):
+#    exit code 1, BUSL_UNKNOWN= per folder, MERGE=busl-unknown;
+# 5. otherwise the merge is committed (or left staged with --no-commit), exit code 0.
+# Prints KEY=value lines: BUSL_RESOLVED, BUSL_DROPPED, BUSL_UNKNOWN, CONFLICTS, then MERGE=.
 set -euo pipefail
 
 REMOVED_PATHS=(
@@ -57,12 +59,30 @@ count() { if [[ -z "$1" ]]; then echo 0; else grep -c '' <<< "$1"; fi; }
 echo "BUSL_RESOLVED=$(count "$resolved")"
 echo "BUSL_DROPPED=$(count "$(comm -23 <(echo "$dropped") <(echo "$resolved") | sed '/^$/d')")"
 
+# A BUSL folder this script does not know: listed in the merged LICENSE (indented "  path/" lines)
+# or holding a LICENSE file under the Business Source License. Committing would bring it in.
+busl_folders="$(
+  sed -nE 's#^  ([A-Za-z0-9._-][A-Za-z0-9._/-]*)/$#\1#p' LICENSE 2>/dev/null || true
+  git grep --cached -l -I 'Business Source License' -- '*LICENSE*' ':(exclude)LICENSE' 2>/dev/null \
+    | while IFS= read -r file; do dirname "$file"; done || true
+)"
+unknown="$(sed '/^$/d' <<< "$busl_folders" | sort -u | grep -v -x -F -f <(printf '%s\n' "${REMOVED_PATHS[@]}") || true)"
+if [[ -n "$unknown" ]]; then
+  while IFS= read -r path; do echo "BUSL_UNKNOWN=$path"; done <<< "$unknown"
+fi
+
 remaining="$(git diff --name-only --diff-filter=U | sort -u)"
 echo "CONFLICTS=$(count "$remaining")"
 if [[ -n "$remaining" ]]; then
   while IFS= read -r path; do echo "CONFLICT=$path"; done <<< "$remaining"
   echo "MERGE=conflict"
   echo "Merge of $ref left in place: resolve the conflicts above, or git merge --abort." >&2
+  exit 1
+fi
+if [[ -n "$unknown" ]]; then
+  echo "MERGE=busl-unknown"
+  echo "Merge of $ref left in place: upstream has BUSL folders this script does not remove" \
+    "(BUSL_UNKNOWN above). Add them to REMOVED_PATHS and run it again, or git merge --abort." >&2
   exit 1
 fi
 
