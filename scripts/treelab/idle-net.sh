@@ -123,9 +123,14 @@ for pid in ppid:
 PY
 }
 : > "$OUT/tree.log"
+# An allowed host's addresses rotate (api.github.com answers change within minutes): resolved again
+# every 5 s through the system resolver Treelab itself uses, so each address it is given is known.
+tick=0
 while kill -0 "$nettop_pid" 2>/dev/null; do
   kill -0 "$ROOT_PID" 2>/dev/null || { echo "Treelab (pid $ROOT_PID) exited during the measurement" > "$OUT/root-exited.txt"; }
   sample_tree >> "$OUT/tree.log"
+  if ((${#ALLOW_HOSTS[@]} > 0 && tick % 5 == 0)); then resolve_hosts >> "$OUT/allowed-addresses.txt"; fi
+  tick=$((tick + 1))
   sleep 1
 done
 wait "$nettop_pid" || true
