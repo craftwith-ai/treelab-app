@@ -1,4 +1,5 @@
 import Darwin
+import CmuxFoundation
 import Foundation
 
 /// Filesystem paths shared by the app-owned cmux-cua runtime and agent wrappers.
@@ -80,7 +81,9 @@ public struct ComputerUseRuntimePaths: Sendable {
             userIdentifier: userIdentifier
         )
         computerUseDirectoryURL = homeDirectoryURL
-            .appendingPathComponent("Library/Application Support/cmux/cmux-cua", isDirectory: true)
+            .appendingPathComponent("Library/Application Support", isDirectory: true)
+            .appendingPathComponent(AppBranding.current.applicationSupportDirectoryName, isDirectory: true)
+            .appendingPathComponent("cmux-cua", isDirectory: true)
         runtimeDirectoryURL = socketRootDirectoryURL
             .appendingPathComponent("cmux-cua-\(userIdentifier)", isDirectory: true)
             .appendingPathComponent(scope, isDirectory: true)

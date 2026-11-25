@@ -17,7 +17,8 @@ public struct AppBranding: Equatable, Sendable {
     public let bundleIdentifier: String
     /// The folder name under `~/.local/state` and `~/.config`.
     public let directoryName: String
-    /// The folder name under `~/Library/Application Support`.
+    /// The folder name under `~/Library/Application Support` (Treelab uses its bundle identifier,
+    /// the folder upstream already uses for bundle-scoped stores).
     public let applicationSupportDirectoryName: String
     /// The prefix of the socket files and of the `/tmp` marker (`<prefix>.sock`).
     public let socketPrefix: String
@@ -39,7 +40,7 @@ public struct AppBranding: Equatable, Sendable {
         displayName: "Treelab",
         bundleIdentifier: "sh.treelab.app",
         directoryName: "treelab",
-        applicationSupportDirectoryName: "Treelab",
+        applicationSupportDirectoryName: "sh.treelab.app",
         socketPrefix: "treelab",
         urlScheme: "treelab"
     )
@@ -138,16 +139,19 @@ public struct AppBranding: Equatable, Sendable {
         return .cmux
     }
 
-    /// The identifier of the nearest `.app` bundle that contains `executableURL`.
+    /// The identifier of the outermost `.app` bundle that contains `executableURL`.
+    ///
+    /// Outermost, so a helper app nested in Treelab (`Contents/Library/*.app`) shares its brand.
     public static func enclosingAppBundleIdentifier(executableURL: URL?) -> String? {
         guard var url = executableURL?.resolvingSymlinksInPath() else { return nil }
+        var outermost: String?
         while url.pathComponents.count > 1 {
             url = url.deletingLastPathComponent()
             if url.pathExtension == "app", let identifier = Bundle(url: url)?.bundleIdentifier {
-                return identifier
+                outermost = identifier
             }
         }
-        return nil
+        return outermost
     }
 
     private static func normalized(_ value: String?) -> String? {

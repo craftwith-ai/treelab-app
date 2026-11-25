@@ -29,8 +29,11 @@ public struct SudoBrokerPaths: Sendable, Equatable {
         let scope = sanitizedScope.isEmpty || sanitizedScope == "." || sanitizedScope == ".."
             ? "com.cmuxterm.app"
             : sanitizedScope
+        // cmux builds share the `cmux` folder; any other app (the Treelab fork) keeps its
+        // spool in its own bundle-identifier folder, never under cmux's.
+        let isCmux = scope == "com.cmuxterm.app" || scope.hasPrefix("com.cmuxterm.app.")
         base = applicationSupportDirectory
-            .appendingPathComponent("cmux", isDirectory: true)
+            .appendingPathComponent(isCmux ? "cmux" : scope, isDirectory: true)
             .appendingPathComponent("sudo", isDirectory: true)
             .appendingPathComponent(scope, isDirectory: true)
             .standardizedFileURL

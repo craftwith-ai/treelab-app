@@ -57,7 +57,7 @@ import Testing
         #expect(AppBranding.treelab.configDirectory(homeDirectory: home).path
             == "/Users/test-user/.config/treelab")
         #expect(AppBranding.treelab.applicationSupportDirectory(in: support).path
-            == "/Users/test-user/Library/Application Support/Treelab")
+            == "/Users/test-user/Library/Application Support/sh.treelab.app")
         #expect(AppBranding.treelab.stateDirectory(homeDirectory: home)
             != AppBranding.cmux.stateDirectory(homeDirectory: home))
         #expect(AppBranding.treelab.applicationSupportDirectory(in: support)
@@ -163,5 +163,30 @@ import Testing
             == "/Users/test-user/.config/treelab/cmux.json")
         #expect(CmuxConfigLocation(home: home).userConfigFile.path
             == "/Users/test-user/.config/cmux/cmux.json")
+    }
+
+    @Test func nestedHelperAppTakesTheBrandOfTheOutermostApp() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("treelab-nested-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        func makeApp(_ url: URL, identifier: String) throws {
+            let contents = url.appendingPathComponent("Contents", isDirectory: true)
+            try FileManager.default.createDirectory(
+                at: contents.appendingPathComponent("MacOS", isDirectory: true),
+                withIntermediateDirectories: true
+            )
+            let plist: [String: Any] = ["CFBundleIdentifier": identifier, "CFBundlePackageType": "APPL"]
+            try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
+                .write(to: contents.appendingPathComponent("Info.plist"))
+        }
+        let app = root.appendingPathComponent("Treelab.app", isDirectory: true)
+        let helper = app.appendingPathComponent("Contents/Library/cmux Computer Use.app", isDirectory: true)
+        try makeApp(app, identifier: "sh.treelab.app")
+        try makeApp(helper, identifier: "com.cmuxterm.cua")
+
+        let helperExecutable = helper.appendingPathComponent("Contents/MacOS/helper")
+        #expect(AppBranding.enclosingAppBundleIdentifier(executableURL: helperExecutable) == "sh.treelab.app")
+        let cliExecutable = app.appendingPathComponent("Contents/Resources/bin/cmux")
+        #expect(AppBranding.enclosingAppBundleIdentifier(executableURL: cliExecutable) == "sh.treelab.app")
     }
 }
