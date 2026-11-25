@@ -72,4 +72,23 @@ struct TreelabSettingsSectionsTests {
         #expect(SettingsSectionID.landing(hidden: hidden) == .account)
         #expect(SettingsSectionID.mobile.shown(hidden: hidden) == .mobile)
     }
+
+    /// `cmux settings open account` in Treelab scrolls to the top of the landing section, not to
+    /// a hidden section's anchor that never mounts (the pane would keep its old scroll offset).
+    @Test @MainActor func treelabScrollsARequestForAHiddenSectionToTheLandingHeader() {
+        let hidden = SettingsSectionID.hidden(by: .treelab)
+        let landing = SettingsSectionID.landing(hidden: hidden)
+
+        for section in SettingsSectionID.manaflowServiceSections {
+            let shown = SettingsSectionID.shownDestination(
+                section.navigationDestination(providedAnchor: nil), hidden: hidden
+            )
+            #expect(shown.section == landing, "\(section)")
+            #expect(shown.anchorID == "section:\(landing.rawValue)", "\(section)")
+        }
+        let terminal = SettingsSectionID.terminal.navigationDestination(providedAnchor: "row:x")
+        #expect(SettingsSectionID.shownDestination(terminal, hidden: hidden) == terminal)
+        let account = SettingsSectionID.account.navigationDestination(providedAnchor: nil)
+        #expect(SettingsSectionID.shownDestination(account, hidden: SettingsSectionID.hidden(by: .cmux)) == account)
+    }
 }

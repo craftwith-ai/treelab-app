@@ -26,6 +26,16 @@ extension SettingsSectionID {
     func shown(hidden: Set<SettingsSectionID> = hidden()) -> SettingsSectionID {
         hidden.contains(self) ? Self.landing(hidden: hidden) : self
     }
+
+    /// Where a navigation request scrolls: `destination` itself, or the top of the landing
+    /// section (its own header) when the requested section is hidden.
+    @MainActor
+    static func shownDestination(
+        _ destination: (section: SettingsSectionID, anchorID: String),
+        hidden: Set<SettingsSectionID> = hidden()
+    ) -> (section: SettingsSectionID, anchorID: String) {
+        destination
+    }
 }
 
 extension SettingsSidebarEntryVisibility {
