@@ -147,7 +147,7 @@ done
 echo "==> Brand: texts, icons, terminal themes"
 BRAND="$ROOT/scripts/treelab/brand"
 # Texts of every language and nested bundle, Info.plist, AppleScript dictionary, HTML titles.
-python3 -I "$ROOT/scripts/treelab/brand-bundle.py" apply --name "$APP_NAME" "$APP" | grep -E '^(CHANGED_FILES|REPLACED)='
+python3 -I "$ROOT/scripts/treelab/brand-bundle.py" apply --name "$APP_NAME" "$APP" | grep -E '^(CHANGED_FILES|REPLACED|ADDED_KEYS)='
 # Icons: upstream's asset catalog recompiled with Treelab's images under upstream's names
 # (images from scripts/treelab/make-icons.sh); scripts/treelab/check-icons.sh compares the result.
 CATALOG="$OUTPUT_DIR/brand-assets"
