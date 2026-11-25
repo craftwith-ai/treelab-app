@@ -1,3 +1,5 @@
+import CmuxCloud
+import CmuxFoundation
 import CmuxSettings
 import Darwin
 import Foundation
@@ -64,5 +66,21 @@ import Testing
         #expect(resolution.candidatePaths.contains("/tmp/cmux.sock"))
         #expect(CLISocketPathResolver.defaultSocketPath(bundleIdentifier: "com.cmuxterm.app", environment: [:])
             .hasSuffix("/.local/state/cmux/cmux.sock"))
+    }
+}
+
+/// Treelab registers its own URL scheme and never takes `cmux://` from the user's cmux.
+@Suite struct TreelabURLSchemeTests {
+    @Test func treelabReleaseUsesTreelabScheme() {
+        #expect(AuthEnvironment.callbackScheme(
+            environment: [:],
+            bundleIdentifier: "sh.treelab.app",
+            isDebugBuild: false
+        ) == "treelab")
+        #expect(AuthEnvironment.callbackScheme(
+            environment: [:],
+            bundleIdentifier: "com.cmuxterm.app",
+            isDebugBuild: false
+        ) == "cmux")
     }
 }

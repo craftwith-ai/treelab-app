@@ -1,3 +1,4 @@
+import CmuxFoundation
 import Foundation
 
 enum GhosttyCrashBreadcrumb {
@@ -219,12 +220,9 @@ enum GhosttyCrashBreadcrumb {
                 fileURLWithPath: (xdgStateHome as NSString).expandingTildeInPath,
                 isDirectory: true
             )
-            .appendingPathComponent("cmux", isDirectory: true)
+            .appendingPathComponent(AppBranding.current.directoryName, isDirectory: true)
         } else {
-            stateRoot = homeDirectory
-                .appendingPathComponent(".local", isDirectory: true)
-                .appendingPathComponent("state", isDirectory: true)
-                .appendingPathComponent("cmux", isDirectory: true)
+            stateRoot = AppBranding.current.stateDirectory(homeDirectory: homeDirectory)
         }
 
         return stateRoot

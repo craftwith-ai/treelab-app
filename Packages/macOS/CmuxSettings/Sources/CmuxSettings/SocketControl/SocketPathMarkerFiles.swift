@@ -1,10 +1,12 @@
+import CmuxFoundation
 public import Foundation
 
 public enum SocketPathMarkerFiles {
     /// The stable release bundle identifier used for machine-wide discovery.
     public static let stableBundleIdentifier = "com.cmuxterm.app"
     public static let stableMarkerFileName = "last-socket-path"
-    public static let stableTmpPath = "/tmp/cmux-last-socket-path"
+    /// The running brand's stable `/tmp` marker (`/tmp/cmux-last-socket-path` for cmux).
+    public static var stableTmpPath: String { AppBranding.current.tmpMarkerPath }
     public static let nightlyBundleIdentifier = "com.cmuxterm.app.nightly"
     public static let rcBundleIdentifier = "com.cmuxterm.app.rc"
     public static let stagingBundleIdentifier = "com.cmuxterm.app.staging"
@@ -39,7 +41,11 @@ public enum SocketPathMarkerFiles {
         )?.path {
             candidates.append(directoryPath)
         }
-        candidates.append(variant.tmpPath)
+        // The stable marker follows the identifier's brand: Treelab and unknown
+        // identifiers never name cmux's machine-wide marker.
+        candidates.append(variant == .stable
+            ? AppBranding.resolve(bundleIdentifier: bundleIdentifier).tmpMarkerPath
+            : variant.tmpPath)
         return dedupe(candidates)
     }
 

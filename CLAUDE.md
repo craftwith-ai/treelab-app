@@ -118,7 +118,7 @@ Interface : `Sources/` `Packages/macOS/` `Resources/` `Assets.xcassets/` `CLI/` 
 
 - Build only with `scripts/treelab/build.sh` (Release arm64, `sh.treelab.app`, ad hoc signature, own DerivedData), then
   `scripts/treelab/check-identity.sh`. Never open the project in Xcode: Xcode 27 rewrites it; `scripts/check-pbxproj.sh` stays green.
-- Name, bundle id, socket, folders and URL scheme come from `TreelabBranding` (CmuxSettings); never write them elsewhere.
+- Name, bundle id, socket, folders and URL scheme come from `AppBranding` (CmuxFoundation, `TreelabBranding.swift`); never write them elsewhere.
 - The user's cmux (`com.cmuxterm.app`) runs beside Treelab: strip `CMUX_*` from the environment before any command aimed
   at Treelab, and never touch its socket, folders or CLI links.
 - Not applicable here: fleet builds and cmuxterm-hq links, `dev-build`/`full-ci` labels, `gh-merge-green`, CLA Assistant,

@@ -1,3 +1,4 @@
+import CmuxFoundation
 import Foundation
 import Testing
 
@@ -143,5 +144,24 @@ import Testing
         ])
         #expect(SocketControlSettings.userScopedStableSocketPath(currentUserID: 501)
             == CmuxStateDirectory.url(homeDirectory: accountHome).path + "/cmux-501.sock")
+    }
+
+    // MARK: - Names and folders read from the brand
+
+    @Test func treelabRebrandsTranslatedNamesAndCmuxKeepsThem() {
+        #expect(AppBranding.treelab.rebranded("À propos de cmux") == "À propos de Treelab")
+        #expect(AppBranding.treelab.rebranded("Quitter cmux ?") == "Quitter Treelab ?")
+        #expect(AppBranding.cmux.rebranded("Quit cmux") == "Quit cmux")
+    }
+
+    @Test func stateDirectoryAndConfigFollowTheGivenBrand() {
+        #expect(CmuxStateDirectory.url(homeDirectory: home, branding: .treelab).path
+            == "/Users/test-user/.local/state/treelab")
+        #expect(CmuxStateDirectory.url(homeDirectory: home, branding: .cmux).path
+            == "/Users/test-user/.local/state/cmux")
+        #expect(CmuxConfigLocation(home: home, branding: .treelab).userConfigFile.path
+            == "/Users/test-user/.config/treelab/cmux.json")
+        #expect(CmuxConfigLocation(home: home).userConfigFile.path
+            == "/Users/test-user/.config/cmux/cmux.json")
     }
 }

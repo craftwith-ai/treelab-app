@@ -83,6 +83,14 @@ public struct AppBranding: Equatable, Sendable {
         applicationSupport.appendingPathComponent(applicationSupportDirectoryName, isDirectory: true)
     }
 
+    /// Puts this brand's name in a translated string that names the upstream app.
+    ///
+    /// Menus and dialogs keep their translations (`"À propos de cmux"`) and show this
+    /// brand's name (`"À propos de Treelab"`). Upstream cmux gets the text unchanged.
+    public func rebranded(_ text: String) -> String {
+        self == .cmux ? text : text.replacingOccurrences(of: Self.cmux.displayName, with: displayName)
+    }
+
     /// Whether `bundleIdentifier` is upstream cmux or one of its variants.
     public static func isUpstreamIdentifier(_ bundleIdentifier: String?) -> Bool {
         guard let identifier = normalized(bundleIdentifier) else { return false }
