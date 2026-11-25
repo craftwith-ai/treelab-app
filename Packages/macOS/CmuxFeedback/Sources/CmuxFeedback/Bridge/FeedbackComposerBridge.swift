@@ -1,4 +1,5 @@
 public import AppKit
+public import CmuxFoundation
 import Foundation
 
 /// Validates feedback input, drives ``FeedbackComposerClient`` to upload it, and
@@ -8,15 +9,20 @@ public struct FeedbackComposerBridge {
     /// The configured client the bridge uploads through.
     public let client: FeedbackComposerClient
     private let userDefaults: UserDefaults
+    /// False for a brand that does not offer Manaflow's services (Treelab):
+    /// feedback goes to Manaflow, so the composer stays closed and nothing is sent.
+    private let offersFeedback: Bool
 
     /// Creates a bridge over a feedback client and the defaults store the
     /// submitter's email is persisted in.
     public init(
         client: FeedbackComposerClient = FeedbackComposerClient(),
-        userDefaults: UserDefaults = .standard
+        userDefaults: UserDefaults = .standard,
+        branding: AppBranding = .current
     ) {
         self.client = client
         self.userDefaults = userDefaults
+        self.offersFeedback = branding.offersManaflowServices
     }
 
     private var settings: FeedbackComposerSettings { client.settings }
@@ -26,6 +32,7 @@ public struct FeedbackComposerBridge {
     /// window-scoped notification.
     @MainActor
     public func openComposer(in window: NSWindow? = NSApp.keyWindow ?? NSApp.mainWindow) {
+        guard offersFeedback else { return }
         NotificationCenter.default.post(name: .feedbackComposerRequested, object: window)
     }
 
@@ -36,6 +43,11 @@ public struct FeedbackComposerBridge {
         message: String,
         imagePaths: [String]
     ) async throws -> Int {
+        guard offersFeedback else {
+            throw FeedbackComposerBridgeError.submissionFailed(
+                Self.userFacingMessage(for: FeedbackComposerSubmissionError.invalidEndpoint)
+            )
+        }
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
 

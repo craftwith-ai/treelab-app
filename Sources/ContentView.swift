@@ -7289,12 +7289,14 @@ struct ContentView: View {
         var handlerRegistry = CommandPaletteHandlerRegistry()
         registerCommandPaletteHandlers(&handlerRegistry)
         let cloudCapabilityPolicy = CommandPaletteCloudCapabilityPolicy()
+        let brandPolicy = TreelabCommandPalettePolicy()
 
         var commands: [CommandPaletteCommand] = []
         commands.reserveCapacity(contributions.count)
         var nextRank = 0
 
         for contribution in contributions {
+            guard brandPolicy.allows(commandId: contribution.commandId) else { continue }
             guard cloudCapabilityPolicy.allows(
                 commandId: contribution.commandId,
                 context: context
@@ -8002,7 +8004,7 @@ struct ContentView: View {
         )
         contributions.append(
             CommandPaletteCommandContribution(
-                commandId: "palette.mobileConnect",
+                commandId: Self.commandPaletteMobileConnectCommandId,
                 title: constant(
                     String(localized: "command.mobileConnect.title", defaultValue: "Open Mobile Pairing")
                 ),
@@ -8036,7 +8038,7 @@ struct ContentView: View {
         )
         contributions.append(
             CommandPaletteCommandContribution(
-                commandId: "palette.checkForUpdates",
+                commandId: Self.commandPaletteCheckForUpdatesCommandId,
                 title: constant(String(localized: "command.checkForUpdates.title", defaultValue: "Check for Updates")),
                 subtitle: constant(String(localized: "command.checkForUpdates.subtitle", defaultValue: "Global")),
                 keywords: ["update", "upgrade", "release"]
@@ -8044,7 +8046,7 @@ struct ContentView: View {
         )
         contributions.append(
             CommandPaletteCommandContribution(
-                commandId: "palette.applyUpdateIfAvailable",
+                commandId: Self.commandPaletteApplyUpdateIfAvailableCommandId,
                 title: constant(String(localized: "command.applyUpdateIfAvailable.title", defaultValue: "Apply Update (If Available)")),
                 subtitle: constant(String(localized: "command.applyUpdateIfAvailable.subtitle", defaultValue: "Global")),
                 keywords: ["apply", "install", "update", "available"],
@@ -8053,7 +8055,7 @@ struct ContentView: View {
         )
         contributions.append(
             CommandPaletteCommandContribution(
-                commandId: "palette.attemptUpdate",
+                commandId: Self.commandPaletteAttemptUpdateCommandId,
                 title: constant(String(localized: "command.attemptUpdate.title", defaultValue: "Attempt Update")),
                 subtitle: constant(String(localized: "command.attemptUpdate.subtitle", defaultValue: "Global")),
                 keywords: ["attempt", "check", "update", "upgrade", "release"]
@@ -15973,7 +15975,7 @@ private struct SidebarHelpMenuButton: View {
                 accessibilityIdentifier: "SidebarHelpMenuOptionWelcome",
                 isExternalLink: false
             )
-            if let offer = ProUpgradePresenter.currentUpgradeOffer {
+            if AppBranding.current.offersManaflowServices, let offer = ProUpgradePresenter.currentUpgradeOffer {
                 helpOptionButton(
                     title: ProUpgradePresenter.upgradeMenuTitle(for: offer),
                     action: .upgrade,
@@ -16001,14 +16003,16 @@ private struct SidebarHelpMenuButton: View {
                 accessibilityIdentifier: "SidebarHelpMenuOptionImportBrowserData",
                 isExternalLink: false
             )
-            helpOptionButton(
-                title: String(localized: "sidebar.help.sendFeedback", defaultValue: "Send Feedback"),
-                action: .sendFeedback,
-                accessibilityIdentifier: "SidebarHelpMenuOptionSendFeedback",
-                isExternalLink: false,
-                shortcutHint: sendFeedbackShortcutHint,
-                trailingSystemImage: "bubble.left.and.text.bubble.right"
-            )
+            if AppBranding.current.offersManaflowServices {
+                helpOptionButton(
+                    title: String(localized: "sidebar.help.sendFeedback", defaultValue: "Send Feedback"),
+                    action: .sendFeedback,
+                    accessibilityIdentifier: "SidebarHelpMenuOptionSendFeedback",
+                    isExternalLink: false,
+                    shortcutHint: sendFeedbackShortcutHint,
+                    trailingSystemImage: "bubble.left.and.text.bubble.right"
+                )
+            }
             if docsURL != nil {
                 helpOptionButton(
                     title: String(localized: "about.docs", defaultValue: "Docs"),
@@ -16049,12 +16053,14 @@ private struct SidebarHelpMenuButton: View {
                     isExternalLink: true
                 )
             }
-            helpOptionButton(
-                title: String(localized: "command.checkForUpdates.title", defaultValue: "Check for Updates"),
-                action: .checkForUpdates,
-                accessibilityIdentifier: "SidebarHelpMenuOptionCheckForUpdates",
-                isExternalLink: false
-            )
+            if AppBranding.current.offersManaflowServices {
+                helpOptionButton(
+                    title: String(localized: "command.checkForUpdates.title", defaultValue: "Check for Updates"),
+                    action: .checkForUpdates,
+                    accessibilityIdentifier: "SidebarHelpMenuOptionCheckForUpdates",
+                    isExternalLink: false
+                )
+            }
         }
         .padding(8)
         .frame(minWidth: 200)
@@ -18527,4 +18533,12 @@ enum SidebarSelection {
     case notifications
     /// Chief Home fills the content area; workspaces stay mounted but hidden and input-inactive.
     case home
+}
+
+// Named so a test can check that Treelab's palette policy leaves these commands out.
+extension ContentView {
+    static let commandPaletteMobileConnectCommandId = "palette.mobileConnect"
+    static let commandPaletteCheckForUpdatesCommandId = "palette.checkForUpdates"
+    static let commandPaletteApplyUpdateIfAvailableCommandId = "palette.applyUpdateIfAvailable"
+    static let commandPaletteAttemptUpdateCommandId = "palette.attemptUpdate"
 }

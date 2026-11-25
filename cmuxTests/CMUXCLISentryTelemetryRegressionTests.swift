@@ -93,10 +93,13 @@ private final class CMUXCLISentryTelemetryBundleToken {}
             FileManager.default.fileExists(atPath: captureProbePath),
             Comment(rawValue: "Unexpected relay auth failures should still be captured as telemetry-worthy errors. Output: \(result.stdout)")
         )
+        // Only a CLI linked with the Sentry SDK stores envelopes (Treelab ships without it).
+#if canImport(Sentry)
         #expect(
             FileManager.default.fileExists(atPath: storeProbePath),
             Comment(rawValue: "Unexpected relay auth failures should be stored durably without synchronously flushing Sentry. Output: \(result.stdout)")
         )
+#endif
     }
 
     @Test func structuredProtocolCodeControlsSentryCapture() throws {
@@ -317,11 +320,14 @@ private final class CMUXCLISentryTelemetryBundleToken {}
             FileManager.default.fileExists(atPath: firstCaptureProbe),
             Comment(rawValue: "The first timed-out command per stage must stay reportable. Output: \(first.stdout)")
         )
+        // Only a CLI linked with the Sentry SDK stores envelopes (Treelab ships without it).
+#if canImport(Sentry)
         let firstStorePayload = (try? String(contentsOfFile: firstStoreProbe, encoding: .utf8)) ?? "<missing>"
         #expect(
             firstStorePayload.contains("fingerprint=cmux-cli|socket_command|command-timed-out"),
             Comment(rawValue: "Timed-out commands need their own stage-scoped Sentry fingerprint. Store probe: \(firstStorePayload)")
         )
+#endif
 
         let secondCaptureProbe = root.appendingPathComponent("capture-2.txt", isDirectory: false).path
         let secondStoreProbe = root.appendingPathComponent("store-2.txt", isDirectory: false).path

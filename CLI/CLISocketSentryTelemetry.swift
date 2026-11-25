@@ -1,5 +1,7 @@
 import CmuxFoundation
+#if canImport(CmuxSentryReporting)
 import CmuxSentryReporting
+#endif
 import CmuxSettings
 import Darwin
 import Foundation

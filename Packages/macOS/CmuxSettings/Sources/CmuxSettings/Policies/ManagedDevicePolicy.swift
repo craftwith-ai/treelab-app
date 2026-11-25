@@ -1,3 +1,4 @@
+import CmuxFoundation
 import Foundation
 
 /// Resolves MDM-managed ("forced") preference values for cmux's enterprise
@@ -45,6 +46,7 @@ public struct ManagedDevicePolicy: Sendable {
     nonisolated(unsafe) private let defaults: UserDefaults
     nonisolated(unsafe) private let releaseDomainDefaults: UserDefaults?
     private let forcedObject: ForcedObjectProbe
+    private let brandForcedKeys: Set<String>
 
     /// Creates a resolver.
     ///
@@ -58,16 +60,21 @@ public struct ManagedDevicePolicy: Sendable {
     ///     the fallback.
     ///   - forcedObject: Probe answering whether a profile forces a key in a
     ///     given domain. Tests inject a deterministic probe.
+    ///   - branding: The brand whose ``AppBranding/forcedManagedPolicyKeys``
+    ///     are enforced in code, as if the app's own domain forced them to
+    ///     `true`. Defaults to the running process's brand.
     public init(
         defaults: UserDefaults = .standard,
         releaseDomainDefaults: UserDefaults? = ManagedDevicePolicy.defaultReleaseDomainDefaults(),
         forcedObject: @escaping ForcedObjectProbe = { defaults, key in
             defaults.objectIsForced(forKey: key) ? defaults.object(forKey: key) : nil
-        }
+        },
+        branding: AppBranding = .current
     ) {
         self.defaults = defaults
         self.releaseDomainDefaults = releaseDomainDefaults
         self.forcedObject = forcedObject
+        self.brandForcedKeys = branding.forcedManagedPolicyKeys
     }
 
     /// The release-domain fallback suite for the running process, or `nil`
@@ -132,7 +139,7 @@ public struct ManagedDevicePolicy: Sendable {
     public func forcedValue(
         forUserDefaultsKey userDefaultsKey: String
     ) -> (object: Any, source: ManagedDevicePolicyValueSource)? {
-        if let value = forcedObject(defaults, userDefaultsKey) {
+        if let value = appDomainForcedObject(userDefaultsKey) {
             return (value, .appDomain)
         }
         if let releaseDomainDefaults,
@@ -218,7 +225,16 @@ public struct ManagedDevicePolicy: Sendable {
     /// is not consulted — it never conflicts with writes to the app's own
     /// domain.
     public func isKeyForcedInAppDomain(_ userDefaultsKey: String) -> Bool {
-        forcedObject(defaults, userDefaultsKey) != nil
+        appDomainForcedObject(userDefaultsKey) != nil
+    }
+
+    /// The object forced in the app's own domain: a key the brand forces in
+    /// code reads as a profile-forced `true`, ahead of any profile.
+    private func appDomainForcedObject(_ userDefaultsKey: String) -> Any? {
+        if brandForcedKeys.contains(userDefaultsKey) {
+            return true
+        }
+        return forcedObject(defaults, userDefaultsKey)
     }
 
     /// Whether the embedded-browser URL allowlist is locked by MDM.

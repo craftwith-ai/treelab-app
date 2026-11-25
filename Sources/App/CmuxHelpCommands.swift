@@ -1,5 +1,6 @@
 import AppKit
 import CmuxFeedback
+import CmuxFoundation
 import SwiftUI
 
 extension cmuxApp {
@@ -11,23 +12,26 @@ extension cmuxApp {
 
             Divider()
 
-            Button(String(localized: "cloud.diagnostics.menu", defaultValue: "Cloud Diagnostics…")) {
-                AppDelegate.shared?.showCloudDiagnostics()
-            }
+            // A brand without Manaflow's services (Treelab) offers no Cloud, feedback, update or Pro item.
+            if AppBranding.current.offersManaflowServices {
+                Button(String(localized: "cloud.diagnostics.menu", defaultValue: "Cloud Diagnostics…")) {
+                    AppDelegate.shared?.showCloudDiagnostics()
+                }
 
-            splitCommandButton(title: String(localized: "sidebar.help.sendFeedback", defaultValue: "Send Feedback"), shortcut: menuShortcut(for: .sendFeedback)) {
-                presentFeedbackFromHelpMenu()
-            }
+                splitCommandButton(title: String(localized: "sidebar.help.sendFeedback", defaultValue: "Send Feedback"), shortcut: menuShortcut(for: .sendFeedback)) {
+                    presentFeedbackFromHelpMenu()
+                }
 
-            Button(String(localized: "command.checkForUpdates.title", defaultValue: "Check for Updates")) {
-                AppDelegate.shared?.checkForUpdates(nil)
+                Button(String(localized: "command.checkForUpdates.title", defaultValue: "Check for Updates")) {
+                    AppDelegate.shared?.checkForUpdates(nil)
+                }
             }
 
             Divider()
 
             helpResourceButton(.githubIssues)
             helpResourceButton(.discord)
-            if let offer = ProUpgradePresenter.currentUpgradeOffer {
+            if AppBranding.current.offersManaflowServices, let offer = ProUpgradePresenter.currentUpgradeOffer {
                 Button(ProUpgradePresenter.upgradeMenuTitle(for: offer)) {
                     ProUpgradePresenter.present(source: .helpMenu)
                 }

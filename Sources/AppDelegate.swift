@@ -31,13 +31,17 @@ import CoreServices
 import CoreGraphics
 import UserNotifications
 import CMUXMobileCore
+#if canImport(Sentry)
 import Sentry
+#endif
 import WebKit
 import Combine
 import ObjectiveC.runtime
 import Darwin
 import CmuxFoundation
+#if canImport(CmuxSentryReporting)
 import CmuxSentryReporting
+#endif
 import CmuxSidebar
 import CmuxGit
 import os
@@ -623,8 +627,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     /// Bridges the Mac host's transport diagnostic ring into Sentry
     /// (breadcrumbs, structured logs, throttled failure events with the ring
     /// export attached). Created after `SentrySDK.start`; delivery no-ops when
-    /// the SDK is off.
+    /// the SDK is off. Absent from builds without the Sentry SDK (Treelab).
+#if canImport(CmuxSentryReporting)
     private var transportSentryReporter: TransportSentryReporter?
+#endif
     private let cmuxThemePreviewReloadScheduler = MainActorDeferredActionScheduler()
     private let connectivityInvalidationSubscriberCoordinator = ConnectivityInvalidationSubscriberCoordinator()
     let workspacePresenceController = WorkspacePresenceController()
@@ -1847,6 +1853,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
 #endif
 
+#if canImport(Sentry) && canImport(CmuxSentryReporting)
         if sentryStartupPolicy.shouldStart {
             // Pre-warm locale before Sentry to avoid a startup data race.
             // Locale initialization (os.locale.ensureLocale / NSLocale._preferredLanguages)
@@ -1921,6 +1928,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             }
             StartupBreadcrumbLog.append("appDelegate.didFinish.sentry.complete")
         }
+#endif
 
         if telemetryEnabled && !isRunningUnderXCTest {
             StartupBreadcrumbLog.append("appDelegate.didFinish.posthog.begin")
@@ -12526,8 +12534,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     @objc func triggerSentryTestCrash(_ sender: Any?) {
+#if canImport(Sentry)
         guard SentrySDK.isEnabled else { return }
         SentrySDK.crash()
+#endif
     }
 #endif
 

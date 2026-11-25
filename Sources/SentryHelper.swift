@@ -1,3 +1,4 @@
+#if canImport(Sentry)
 import CmuxSentryReporting
 import Foundation
 import Sentry
@@ -116,3 +117,34 @@ nonisolated func sentryRefreshMemoryContext(reason: String) async {
         }
     }
 }
+#else
+import Foundation
+
+// Builds without the Sentry SDK (Treelab) keep the same entry points, which do nothing.
+
+/// Add a Sentry breadcrumb for user-action context in hang/crash reports.
+func sentryBreadcrumb(_ message: String, category: String = "ui", data: [String: Any]? = nil) {}
+
+func sentryCaptureWarning(
+    _ message: String,
+    category: String = "ui",
+    data: [String: Any]? = nil,
+    contextKey: String? = nil
+) {}
+
+func sentryCaptureError(
+    _ message: String,
+    category: String = "ui",
+    data: [String: Any]? = nil,
+    contextKey: String? = nil
+) {}
+
+@MainActor
+func sentryStartMemoryContextRefresh() {}
+
+@MainActor
+func sentryStopMemoryContextRefresh() {}
+
+/// Refresh the memory/surface context attached to future Sentry events.
+nonisolated func sentryRefreshMemoryContext(reason: String) async {}
+#endif

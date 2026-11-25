@@ -24,6 +24,18 @@ public struct AppBranding: Equatable, Sendable {
     public let socketPrefix: String
     /// The URL scheme the app registers (`<scheme>://`).
     public let urlScheme: String
+    /// Managed-device policy keys this brand forces in code, as if a configuration profile set
+    /// them to `true` (the raw values of `ManagedDevicePolicyKey` in CmuxSettings).
+    ///
+    /// Treelab cuts every Manaflow service and measurement tool this way: Cloud, remote control,
+    /// Iroh relays, device discovery and incoming device access, telemetry (PostHog, Sentry and
+    /// the remote feature flags), automatic updates and AI credential upload. SSH and Mosh stay
+    /// (`DisableRemoteConnections` is not forced). Upstream cmux forces nothing.
+    public let forcedManagedPolicyKeys: Set<String>
+    /// Whether the app offers Manaflow's services in its interface: account and sign-in,
+    /// the Pro offer, feedback, update checks, and the Settings sections for mobile, Cloud,
+    /// devices and networking. Treelab hides those entries (their code stays).
+    public let offersManaflowServices: Bool
 
     /// Upstream cmux, values unchanged.
     public static let cmux = AppBranding(
@@ -32,7 +44,9 @@ public struct AppBranding: Equatable, Sendable {
         directoryName: "cmux",
         applicationSupportDirectoryName: "cmux",
         socketPrefix: "cmux",
-        urlScheme: "cmux"
+        urlScheme: "cmux",
+        forcedManagedPolicyKeys: [],
+        offersManaflowServices: true
     )
 
     /// The Treelab fork.
@@ -42,7 +56,18 @@ public struct AppBranding: Equatable, Sendable {
         directoryName: "treelab",
         applicationSupportDirectoryName: "sh.treelab.app",
         socketPrefix: "treelab",
-        urlScheme: "treelab"
+        urlScheme: "treelab",
+        forcedManagedPolicyKeys: [
+            "DisableCloud",
+            "DisableRemoteControl",
+            "DisableIrohNetworking",
+            "DisableDeviceDiscovery",
+            "DisableIncomingDeviceAccess",
+            "DisableTelemetry",
+            "DisableAutoUpdate",
+            "DisableAICredentialUpload",
+        ],
+        offersManaflowServices: false
     )
 
     /// The stable socket file name inside ``stateDirectory(homeDirectory:)``.

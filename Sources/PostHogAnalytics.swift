@@ -1,18 +1,22 @@
 import CmuxSettings
 import AppKit
 import Foundation
+#if canImport(PostHog)
 import PostHog
+#endif
 
 // `@unchecked Sendable` is safe here because mutable analytics state is confined
 // to `workQueue`; `activeCheckTimer` is only touched through the main queue.
 final class PostHogAnalytics: @unchecked Sendable {
     static let shared = PostHogAnalytics()
 
+#if canImport(PostHog)
     // The PostHog project API key is intentionally embedded in the app (it's a public key).
     private let apiKey = "phc_opOVu7oFzR9wD3I6ZahFGOV2h3mqGpl5EHyQvmHciDP"
 
     // PostHog Cloud US default (matches other cmux properties).
     private let host = "https://us.i.posthog.com"
+#endif
 
     private let dailyActiveEvent = "cmux_daily_active"
     private let hourlyActiveEvent = "cmux_hourly_active"
@@ -52,9 +56,15 @@ final class PostHogAnalytics: @unchecked Sendable {
         userDefaults: UserDefaults = .standard,
         now: @escaping @Sendable () -> Date = { Date() },
         capturePostHog: @escaping @Sendable (String, [String: Any]) -> Void = { event, properties in
+#if canImport(PostHog)
             PostHogSDK.shared.capture(event, properties: properties)
+#endif
         },
-        flushPostHog: @escaping @Sendable () -> Void = { PostHogSDK.shared.flush() },
+        flushPostHog: @escaping @Sendable () -> Void = {
+#if canImport(PostHog)
+            PostHogSDK.shared.flush()
+#endif
+        },
         contextCalls: PostHogContextCalls = .live,
         environment: [String: String] = ProcessInfo.processInfo.environment,
         telemetryEnabled: @escaping @Sendable () -> Bool = { TelemetrySettings.enabledForCurrentLaunch }
@@ -76,6 +86,10 @@ final class PostHogAnalytics: @unchecked Sendable {
     }
 
     private var isEnabled: Bool {
+#if !canImport(PostHog)
+        // Builds without the PostHog SDK (Treelab) capture nothing.
+        return false
+#else
         // XCTest hosts can inherit the production PostHog configuration. Keep
         // test launches from initializing the SDK or sending crash telemetry.
         guard !MacSentryStartupPolicy.isRunningUnderXCTest(environment: environment) else {
@@ -87,6 +101,7 @@ final class PostHogAnalytics: @unchecked Sendable {
         return environment["CMUX_POSTHOG_ENABLE"] == "1"
 #else
         return !apiKey.isEmpty && apiKey != "REPLACE_WITH_POSTHOG_PUBLIC_KEY"
+#endif
 #endif
     }
 
@@ -169,6 +184,7 @@ final class PostHogAnalytics: @unchecked Sendable {
             guard let self else { return }
             self.startIfNeededOnWorkQueue()
             guard self.didStart else { return }
+#if canImport(PostHog)
             let previous = self.userDefaults.string(forKey: self.identifiedAccountIDKey)
             let distinctID = PostHogSDK.shared.getDistinctId()
             if previous == accountID, distinctID == accountID {
@@ -185,6 +201,7 @@ final class PostHogAnalytics: @unchecked Sendable {
             PostHogSDK.shared.identify(accountID)
             self.userDefaults.set(accountID, forKey: self.identifiedAccountIDKey)
             self.flushPostHog()
+#endif
         }
     }
 
@@ -204,10 +221,12 @@ final class PostHogAnalytics: @unchecked Sendable {
     }
 
     private func resetPostHogIdentityOnWorkQueue() {
+#if canImport(PostHog)
         PostHogSDK.shared.reset()
         // `reset()` also clears registered super properties: restore the
         // desktop tags and the product context (plan, sign-in, Cloud state).
         PostHogSDK.shared.register(Self.superProperties(infoDictionary: Bundle.main.infoDictionary ?? [:]))
+#endif
         if !registeredContext.isEmpty {
             contextCalls.register(registeredContext)
         }
@@ -265,7 +284,8 @@ final class PostHogAnalytics: @unchecked Sendable {
     private func startIfNeededOnWorkQueue() {
         guard !didStart else { return }
         guard isEnabled else { return }
-
+        // Builds without the PostHog SDK (Treelab) never start: nothing is captured or sent.
+#if canImport(PostHog)
         let config: PostHogConfig
 #if DEBUG
         // A loopback collector exercises the real SDK without sending fixture
@@ -299,6 +319,7 @@ final class PostHogAnalytics: @unchecked Sendable {
         didStart = true
 
         scheduleActiveCheckTimer()
+#endif
     }
 
     private func scheduleActiveCheckTimer() {

@@ -1,0 +1,67 @@
+diff --git a/libs/cmux-cua/rust/crates/cmux-cua/src/telemetry.rs b/libs/cmux-cua/rust/crates/cmux-cua/src/telemetry.rs
+index 9adc2e51..7c751774 100644
+--- a/libs/cmux-cua/rust/crates/cmux-cua/src/telemetry.rs
++++ b/libs/cmux-cua/rust/crates/cmux-cua/src/telemetry.rs
+@@ -34,11 +34,12 @@ use std::sync::OnceLock;
+ 
+ /// PostHog ingest endpoint (EU region — matches Swift exactly so dashboards
+ /// aggregate Rust + Swift events cleanly).
+-const POSTHOG_CAPTURE_URL: &str = "https://eu.i.posthog.com/capture/";
++// Treelab build: no ingest endpoint and no project key; nothing is ever posted.
++const POSTHOG_CAPTURE_URL: &str = "";
+ 
+ /// Public PostHog project key. Public by design — keys can only ingest
+ /// events, not read them. Matches Swift `TelemetryClient.Constants.apiKey`.
+-const POSTHOG_API_KEY: &str = "phc_eSkLnbLxsnYFaXksif1ksbrNzYlJShr35miFLDppF14";
++const POSTHOG_API_KEY: &str = "";
+ 
+ /// `~/.cmux-cua/` subdirectory. Renamed from `.cmux-cua/` in v0.2.16
+ /// to match the install path rename (PR #1644). The Swift driver uses the
+@@ -107,7 +108,9 @@ pub mod event {
+ /// Defaults to **enabled** when the env var is unset (matches Swift, which
+ /// defaults `telemetryEnabled` to `true` in its config).
+ pub fn is_enabled() -> bool {
+-    parse_env_bool(ENV_TELEMETRY_ENABLED).unwrap_or(true)
++    // Treelab build: telemetry is removed, whatever the environment says.
++    let _ = parse_env_bool(ENV_TELEMETRY_ENABLED);
++    false
+ }
+ 
+ /// Record a telemetry event. No-op when telemetry is disabled.
+@@ -394,6 +397,11 @@ fn spawn_capture(
+ /// Actual ureq POST. Returns the HTTP status code on success. Anything else
+ /// (network error, 4xx/5xx, timeout) is propagated as `Err`.
+ fn post_to_posthog(payload: &serde_json::Value) -> Result<u16, String> {
++    // Treelab build: the install ping (the only path that ignores the opt-out) fails here,
++    // before any network, so its marker is never written and nothing leaves the Mac.
++    if POSTHOG_CAPTURE_URL.is_empty() {
++        return Err("telemetry is not part of this build".to_owned());
++    }
+     let agent = ureq::Agent::config_builder()
+         .timeout_global(Some(std::time::Duration::from_secs(POSTHOG_TIMEOUT_SECS)))
+         .build()
+@@ -586,19 +594,15 @@ mod tests {
+     }
+ 
+     #[test]
+-    fn is_enabled_defaults_to_true_and_honors_env_opt_out() {
++    fn is_enabled_is_false_whatever_the_environment_in_treelab() {
+         let _g = ENV_LOCK.lock().unwrap();
+         unsafe { std::env::remove_var(ENV_TELEMETRY_ENABLED); }
+-        assert!(is_enabled(), "default must be enabled (Swift parity)");
+-
+-        unsafe { std::env::set_var(ENV_TELEMETRY_ENABLED, "false"); }
+-        assert!(!is_enabled(), "explicit false must disable");
+-
+-        unsafe { std::env::set_var(ENV_TELEMETRY_ENABLED, "0"); }
+-        assert!(!is_enabled(), "0 must disable");
++        assert!(!is_enabled(), "Treelab: disabled by default");
+ 
+         unsafe { std::env::set_var(ENV_TELEMETRY_ENABLED, "true"); }
+-        assert!(is_enabled(), "explicit true must enable");
++        assert!(!is_enabled(), "Treelab: explicit true cannot enable");
++
++        assert!(post_to_posthog(&serde_json::json!({})).is_err(), "Treelab: nothing is posted");
+ 
+         unsafe { std::env::remove_var(ENV_TELEMETRY_ENABLED); }
+     }

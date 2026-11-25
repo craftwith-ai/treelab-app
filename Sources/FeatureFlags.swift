@@ -1,8 +1,11 @@
 import CMUXMobileCore
+import CmuxFoundation
 import CmuxSettings
 import Foundation
 import Observation
+#if canImport(PostHog)
 import PostHog
+#endif
 import os
 
 /// PostHog-backed runtime feature flags for the macOS app (PostHog project
@@ -477,15 +480,29 @@ final class CmuxFeatureFlags {
     }
     private var resolutionsByKey: [String: CmuxFeatureFlagResolution] = [:]
 
+    /// The PostHog SDK's value for a flag; `nil` in builds without the SDK
+    /// (Treelab), so every flag keeps its built-in default.
+    nonisolated static func sdkFlagValue(_ key: String) -> Any? {
+#if canImport(PostHog)
+        PostHogSDK.shared.getFeatureFlag(key)
+#else
+        nil
+#endif
+    }
+
     init(
         defaults: UserDefaults = .standard,
         overrideCapability: CmuxFeatureFlagOverrideCapability = .init(),
         telemetryEnabled: Bool = TelemetrySettings.enabledForCurrentLaunch,
-        remoteFlagValueProvider: @escaping (String) -> Any? = { PostHogSDK.shared.getFeatureFlag($0) },
+        remoteFlagValueProvider: @escaping (String) -> Any? = CmuxFeatureFlags.sdkFlagValue,
         remoteFlagLoader: (@Sendable () async -> [String: Bool]?)? = nil,
         publishesOffMainSnapshot: Bool = false,
-        pinsFlagsToLocalValues: Bool = CmuxFeatureFlags.pinsFlagsToLocalValuesForCurrentLaunch
+        pinsFlagsToLocalValues: Bool = CmuxFeatureFlags.pinsFlagsToLocalValuesForCurrentLaunch,
+        branding: AppBranding = .current
     ) {
+        // A brand without Manaflow's services (Treelab) never fetches remote flags, so values an
+        // older build cached would stay frozen forever: it keeps the built-in defaults instead.
+        let readsRemoteCache = branding.offersManaflowServices
         self.defaults = defaults
         self.overrideCapability = overrideCapability
         self.publishesOffMainSnapshot = publishesOffMainSnapshot
@@ -529,7 +546,7 @@ final class CmuxFeatureFlags {
         if let value = Self.storedOverrideValue(for: Self.cloudMachinesFlag.key, defaults: defaults) {
             localOverridesByKey[Self.cloudMachinesFlag.key] = value
         }
-        remoteValuesByKey = pinsFlagsToLocalValues
+        remoteValuesByKey = pinsFlagsToLocalValues || !readsRemoteCache
             ? [:]
             : Self.allFlags.reduce(into: [:]) { values, definition in
                 if let value = Self.storedBoolValue(
