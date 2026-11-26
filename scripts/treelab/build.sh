@@ -8,7 +8,9 @@
 #
 # The build runs in a scrubbed environment: no CMUX_* or GHOSTTY_* variable inherited
 # from the terminal (often the user's own cmux) reaches xcodebuild or the build phases.
-# Prints "App path: <path>" on success; check it with scripts/treelab/check-identity.sh.
+# Then it puts the brand on the built copy (texts, icons, terminal themes; scripts/treelab/brand/).
+# Prints "App path: <path>" on success; check it with scripts/treelab/check-identity.sh,
+# scripts/treelab/check-brand.sh and scripts/treelab/check-icons.sh.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -19,7 +21,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --output) OUTPUT_DIR="${2:?--output needs a value}"; shift 2 ;;
     --derived-data) DERIVED_DATA="${2:?--derived-data needs a value}"; shift 2 ;;
-    -h|--help) sed -n '2,11p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
     *) echo "error: unknown option $1" >&2; exit 2 ;;
   esac
 done
@@ -52,6 +54,9 @@ CLEAN_ENV=(
   PATH="$ZIG_BIN:$HOME/.cargo/bin:$RUSTUP_BIN:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
   CMUX_WIREGUARD_GO_REQUIRE="${CMUX_WIREGUARD_GO_REQUIRE:-0}"
   CMUX_GHOSTTYKIT_CACHE_DIR="$HOME/.cache/treelab/ghosttykit"
+  # Upstream's build names the Computer Use helper with it (name, permission prompts); the
+  # helper's folder keeps upstream's name, the runtime looks it up by that path.
+  CMUX_CUA_HELPER_DISPLAY_NAME="$APP_NAME Computer Use"
 )
 [[ -n "${DEVELOPER_DIR:-}" ]] && CLEAN_ENV+=(DEVELOPER_DIR="$DEVELOPER_DIR")
 run() { "${CLEAN_ENV[@]}" "$@"; }
@@ -139,7 +144,44 @@ for ((i = 0; i < count; i++)); do
   [[ "$name" == "$UPSTREAM_BUNDLE_ID"* ]] && pb "Set :CFBundleURLTypes:$i:CFBundleURLName ${BUNDLE_ID}${name#"$UPSTREAM_BUNDLE_ID"}"
 done
 
+echo "==> Brand: texts, icons, terminal themes"
+BRAND="$ROOT/scripts/treelab/brand"
+# Texts of every language and nested bundle, Info.plist, AppleScript dictionary, HTML titles.
+python3 -I "$ROOT/scripts/treelab/brand-bundle.py" apply --name "$APP_NAME" "$APP" | grep -E '^(CHANGED_FILES|REPLACED|ADDED_KEYS)='
+# Icons: upstream's asset catalog recompiled with Treelab's images under upstream's names
+# (images from scripts/treelab/make-icons.sh); scripts/treelab/check-icons.sh compares the result.
+CATALOG="$OUTPUT_DIR/brand-assets"
+rm -rf "$CATALOG"
+mkdir -p "$CATALOG/out"
+ditto "$ROOT/Assets.xcassets" "$CATALOG/Assets.xcassets"
+replace_image() {
+  [[ -f "$2" ]] || { echo "error: upstream's catalog has no ${2#"$CATALOG/"} (renamed?)" >&2; exit 1; }
+  cp "$1" "$2"
+}
+for png in "$BRAND"/icons/appiconset/*.png; do
+  replace_image "$png" "$CATALOG/Assets.xcassets/AppIcon.appiconset/$(basename "$png")"
+done
+replace_image "$BRAND/icons/AppIconLight.png" "$CATALOG/Assets.xcassets/AppIconLight.imageset/AppIconLight.png"
+replace_image "$BRAND/icons/AppIconDark.png" "$CATALOG/Assets.xcassets/AppIconDark.imageset/AppIconDark.png"
+run xcrun actool "$CATALOG/Assets.xcassets" --compile "$CATALOG/out" --platform macosx \
+  --minimum-deployment-target "$(pb 'Print :LSMinimumSystemVersion')" --target-device mac --app-icon AppIcon \
+  --output-partial-info-plist "$CATALOG/partial.plist" --errors --output-format human-readable-text >/dev/null
+cp "$CATALOG/out/Assets.car" "$APP/Contents/Resources/Assets.car"
+cp "$CATALOG/out/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+# The Computer Use helper's icon, in the helper and where the app draws it.
+HELPER="$APP/Contents/Library/cmux Computer Use.app"
+cp "$BRAND/icons/ComputerUseHelper.icns" "$APP/Contents/Resources/ComputerUseHelperIcon.icns"
+if [[ -d "$HELPER" ]]; then cp "$BRAND/icons/ComputerUseHelper.icns" "$HELPER/Contents/Resources/AppIcon.icns"; fi
+# Terminal themes applied when the user sets none (AppBranding.defaultTerminalThemeNames).
+cp "$BRAND/themes/Treelab" "$BRAND/themes/Treelab Light" "$APP/Contents/Resources/ghostty/themes/"
+
 echo "==> Ad hoc signature"
+# Nested code whose resources changed first (helper, network extension, Dock tile plugin),
+# keeping its identity; check-identity.sh verifies the whole bundle (--deep --strict).
+for nested in "$HELPER" "$APP"/Contents/Library/SystemExtensions/*.systemextension "$APP"/Contents/PlugIns/*.plugin; do
+  [[ -d "$nested" ]] || continue
+  /usr/bin/codesign --force --sign - --timestamp=none --preserve-metadata=identifier,entitlements,flags,runtime "$nested"
+done
 # Like upstream's ad hoc Release (scripts/reload.sh), the app is built without entitlements
 # (CODE_SIGN_ENTITLEMENTS= above): keychain groups and personal-information access need a
 # signing team. check-identity.sh fails if any entitlement still names cmux.

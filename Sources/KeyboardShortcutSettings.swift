@@ -50,7 +50,9 @@ enum KeyboardShortcutSettings {
     /// Chief while Chief's release flag is off. Such an action is hidden from
     /// settings and never reported as a conflict.
     static func isOffered(_ action: Action, isChiefAvailable: Bool = ChiefSettings.isAvailable) -> Bool {
-        action != .openChief || isChiefAvailable
+        // A brand without Manaflow's services (Treelab) offers no feedback composer.
+        if action == .sendFeedback, !AppBranding.current.offersManaflowServices { return false }
+        return action != .openChief || isChiefAvailable
     }
 
     /// Tells the Settings package which shortcuts the build doesn't offer.
@@ -64,7 +66,8 @@ enum KeyboardShortcutSettings {
 
     /// The Settings package's view of ``isOffered(_:isChiefAvailable:)``.
     static func unavailableSettingsActions(isChiefAvailable: Bool) -> Set<ShortcutAction> {
-        isChiefAvailable ? [] : [.openChief]
+        let chief: Set<ShortcutAction> = isChiefAvailable ? [] : [.openChief]
+        return chief.union(ShortcutAction.brandUnavailableActions(branding: .current))
     }
 
     private static func orderedSettingsVisibleActions(from actions: [Action]) -> [Action] {

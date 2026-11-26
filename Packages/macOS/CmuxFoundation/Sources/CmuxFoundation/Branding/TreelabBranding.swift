@@ -36,6 +36,84 @@ public struct AppBranding: Equatable, Sendable {
     /// the Pro offer, feedback, update checks, and the Settings sections for mobile, Cloud,
     /// devices and networking. Treelab hides those entries (their code stays).
     public let offersManaflowServices: Bool
+    /// The accent of the app's own chrome (`#RRGGBB` for light and dark appearances), drawn in the
+    /// default accent mode. `nil` keeps upstream's cmux blue.
+    public let accentHex: AppearancePair?
+    /// The terminal themes applied when the user has set no theme and no terminal color (the
+    /// light theme in a light appearance, the dark one otherwise). `nil` keeps upstream's.
+    public let defaultTerminalThemeNames: AppearancePair?
+    /// Whether the About panel credits upstream cmux by Manaflow under the GPL.
+    public let creditsUpstream: Bool
+    private let helpSite: HelpSite
+
+    private enum HelpSite: Equatable, Sendable { case cmux, treelab }
+
+    /// A value for the light appearance and one for the dark appearance.
+    public struct AppearancePair: Equatable, Sendable {
+        public let light: String
+        public let dark: String
+
+        public init(light: String, dark: String) {
+            self.light = light
+            self.dark = dark
+        }
+
+        /// The value for a light (`false`) or dark (`true`) appearance.
+        public func value(isDark: Bool) -> String { isDark ? dark : light }
+    }
+
+    /// Where the Help menus and the About panel send the user.
+    public struct HelpLinks: Equatable, Sendable {
+        /// The user guide.
+        public let docs: URL
+        /// What changed in each release.
+        public let changelog: URL
+        /// Where to ask for help or report a problem.
+        public let support: URL
+        /// The source repository.
+        public let source: URL
+        /// The community chat, or `nil` when the brand has none (its menu entry is hidden).
+        public let community: URL?
+
+        /// The source repository's page for one commit.
+        public func commit(_ hash: String) -> URL? {
+            URL(string: "\(source.absoluteString)/commit/\(hash)")
+        }
+    }
+
+    /// The help links for the app's display language (`fr`, `en`, `ja`, `pt-BR`…; `nil` = English).
+    public func helpLinks(languageCode: String?) -> HelpLinks {
+        switch helpSite {
+        case .cmux: return Self.cmuxHelpLinks
+        case .treelab: return Self.treelabHelpLinks(languageCode: languageCode)
+        }
+    }
+
+    /// The help links for the language the app is displayed in.
+    public var helpLinks: HelpLinks {
+        helpLinks(languageCode: Bundle.main.preferredLocalizations.first)
+    }
+
+    private static let cmuxHelpLinks = HelpLinks(
+        docs: URL(string: "https://cmux.com/docs")!,
+        changelog: URL(string: "https://cmux.com/docs/changelog")!,
+        support: URL(string: "https://github.com/manaflow-ai/cmux/issues")!,
+        source: URL(string: "https://github.com/manaflow-ai/cmux")!,
+        community: URL(string: "https://discord.gg/xsgFEVrWCZ")!
+    )
+
+    /// treelab.sh in French or English (the site's two languages); its release notes exist in
+    /// English only. Source on GitHub, no community chat.
+    private static func treelabHelpLinks(languageCode: String?) -> HelpLinks {
+        let site = (languageCode?.lowercased().hasPrefix("fr") ?? false) ? "fr" : "en"
+        return HelpLinks(
+            docs: URL(string: "https://treelab.sh/\(site)/guide/")!,
+            changelog: URL(string: "https://treelab.sh/en/whats-new/")!,
+            support: URL(string: "https://treelab.sh/\(site)/support/")!,
+            source: URL(string: "https://github.com/craftwith-ai/treelab-app")!,
+            community: nil
+        )
+    }
 
     /// Upstream cmux, values unchanged.
     public static let cmux = AppBranding(
@@ -46,7 +124,11 @@ public struct AppBranding: Equatable, Sendable {
         socketPrefix: "cmux",
         urlScheme: "cmux",
         forcedManagedPolicyKeys: [],
-        offersManaflowServices: true
+        offersManaflowServices: true,
+        accentHex: nil,
+        defaultTerminalThemeNames: nil,
+        creditsUpstream: false,
+        helpSite: .cmux
     )
 
     /// The Treelab fork.
@@ -67,8 +149,36 @@ public struct AppBranding: Equatable, Sendable {
             "DisableAutoUpdate",
             "DisableAICredentialUpload",
         ],
-        offersManaflowServices: false
+        offersManaflowServices: false,
+        // treelab.sh's green on dark; a darker green reads on light chrome (6.35:1 on white).
+        accentHex: AppearancePair(light: "#3D6B0F", dark: "#B6F27A"),
+        // Shipped in Contents/Resources/ghostty/themes by scripts/treelab/build.sh.
+        defaultTerminalThemeNames: AppearancePair(light: "Treelab Light", dark: "Treelab"),
+        creditsUpstream: true,
+        helpSite: .treelab
     )
+
+    /// The About panel's line crediting upstream cmux by Manaflow under the GPL, in the app's
+    /// language (`Treelab.xcstrings`), or `nil` when the brand does not credit upstream.
+    public var upstreamCreditLine: String? {
+        guard creditsUpstream else { return nil }
+        let english = "Based on cmux by Manaflow — GPL-3.0-or-later"
+        guard let bundle = CmuxFoundationLocalization.bundle else { return english }
+        return String(
+            localized: "treelab.about.upstreamCredit",
+            defaultValue: String.LocalizationValue(stringLiteral: english),
+            table: "Treelab",
+            bundle: bundle
+        )
+    }
+
+    /// The title of the Help entry that leads to ``HelpLinks/support``, in the app's language,
+    /// or `nil` to keep upstream's "GitHub Issues" (its support link is the issue tracker).
+    public var supportMenuTitle: String? {
+        guard helpSite == .treelab else { return nil }
+        guard let bundle = CmuxFoundationLocalization.bundle else { return "Support" }
+        return String(localized: "treelab.help.support", defaultValue: "Support", table: "Treelab", bundle: bundle)
+    }
 
     /// The stable socket file name inside ``stateDirectory(homeDirectory:)``.
     public var socketFileName: String { "\(socketPrefix).sock" }

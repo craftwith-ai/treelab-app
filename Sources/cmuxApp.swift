@@ -1345,6 +1345,8 @@ struct cmuxApp: App {
                 prepareWindow: { [appDelegate] window in appDelegate.applyWindowDecorations(to: window) },
                 prepareTitlebar: { [appDelegate] window in
                     appDelegate.aboutTitlebarDebugStore.applyCurrentOptions(to: window, for: .about)
+                    // The title is hidden but listed in the Window menu: the brand's name there.
+                    window.title = AppBranding.current.rebranded(window.title)
                 }
             )
         }

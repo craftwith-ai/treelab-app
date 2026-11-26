@@ -7,8 +7,9 @@ struct AboutPanelView: View {
 
     @Environment(\.openURL) private var openURL
 
-    private let githubURL = URL(string: "https://github.com/manaflow-ai/cmux")
-    private let docsURL = URL(string: "https://cmux.com/docs")
+    private let helpLinks = AppBranding.current.helpLinks
+    private var githubURL: URL? { helpLinks.source }
+    private var docsURL: URL? { helpLinks.docs }
 
     private var version: String? { Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String }
     private var build: String? { Bundle.main.infoDictionary?["CFBundleVersion"] as? String }
@@ -40,6 +41,15 @@ struct AboutPanelView: View {
                         .cmuxFont(.caption)
                         .tint(.secondary)
                         .opacity(0.8)
+                    if let credit = AppBranding.current.upstreamCreditLine {
+                        Text(credit)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .cmuxFont(.caption)
+                            .tint(.secondary)
+                            .opacity(0.8)
+                            .accessibilityIdentifier("AboutUpstreamCredit")
+                    }
                 }
                 .textSelection(.enabled)
 
@@ -51,9 +61,7 @@ struct AboutPanelView: View {
                         AboutPropertyRow(label: String(localized: "about.build", defaultValue: "Build"), text: build)
                     }
                     let commitText = commit ?? "—"
-                    let commitURL = commit.flatMap { hash in
-                        URL(string: "https://github.com/manaflow-ai/cmux/commit/\(hash)")
-                    }
+                    let commitURL = commit.flatMap { hash in helpLinks.commit(hash) }
                     AboutPropertyRow(label: String(localized: "about.commit", defaultValue: "Commit"), text: commitText, url: commitURL)
                 }
                 .frame(maxWidth: .infinity)
