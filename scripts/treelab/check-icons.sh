@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Checks the icons and terminal themes of a built Treelab.app against scripts/treelab/brand/:
-#   1. Assets.car holds the same images (name, type, appearance, scale, size) as upstream's
-#      Assets.xcassets compiled by actool, so nothing upstream reads is missing;
+#   1. Assets.car holds the same images (name, type, appearance, scale, size) as the catalog
+#      xcodebuild produced (build.sh's DerivedData, next to the app), so nothing upstream reads is
+#      missing; without that DerivedData, upstream's Assets.xcassets compiled here by actool;
 #   2. AppIconLight, AppIconDark (read from Assets.car like the app and the Dock plugin do) and
 #      the largest AppIcon.icns image are Treelab's images (pixels compared with the sources);
 #   3. the Computer Use helper's icon (in the helper and in the app) and the two terminal themes
@@ -23,13 +24,20 @@ ok() { echo "ok: $*"; }
 fail() { echo "FAIL: $*" >&2; failures=$((failures + 1)); }
 CLEAN=(env -i HOME="$HOME" PATH="/usr/bin:/bin:/usr/sbin:/sbin")
 
-# 1. Same image set as upstream's catalog.
-minimum="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$APP/Contents/Info.plist")"
-mkdir -p "$WORK/upstream"
-"${CLEAN[@]}" xcrun actool "$ROOT/Assets.xcassets" --compile "$WORK/upstream" --platform macosx \
-  --minimum-deployment-target "$minimum" --target-device mac --app-icon AppIcon \
-  --output-partial-info-plist "$WORK/partial.plist" --errors --output-format human-readable-text >/dev/null
-"${CLEAN[@]}" xcrun assetutil --info "$WORK/upstream/Assets.car" > "$WORK/upstream.json"
+# 1. Same image set as upstream's catalog: the one xcodebuild produced, else actool's.
+reference="$(ls "$(dirname "$APP")"/DerivedData/Build/Products/Release/*.app/Contents/Resources/Assets.car 2>/dev/null | head -1 || true)"
+if [[ -z "$reference" ]]; then
+  minimum="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$APP/Contents/Info.plist")"
+  mkdir -p "$WORK/upstream"
+  "${CLEAN[@]}" xcrun actool "$ROOT/Assets.xcassets" --compile "$WORK/upstream" --platform macosx \
+    --minimum-deployment-target "$minimum" --target-device mac --app-icon AppIcon \
+    --output-partial-info-plist "$WORK/partial.plist" --errors --output-format human-readable-text >/dev/null
+  reference="$WORK/upstream/Assets.car"
+  echo "reference: Assets.xcassets compiled by actool (no xcodebuild product next to the app)"
+else
+  echo "reference: ${reference#"$ROOT/"} (xcodebuild)"
+fi
+"${CLEAN[@]}" xcrun assetutil --info "$reference" > "$WORK/upstream.json"
 "${CLEAN[@]}" xcrun assetutil --info "$APP/Contents/Resources/Assets.car" > "$WORK/built.json"
 if diff_out="$(python3 -I - "$WORK/upstream.json" "$WORK/built.json" <<'PY'
 import json, sys
