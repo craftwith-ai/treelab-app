@@ -24,7 +24,9 @@
 # CPU_SECONDS (CPU used during the window: last minus first value of each process, whole value
 # for a process born during it), PROCS_MEDIAN, PROCS_MAX; then MEM_LIMIT_MIB and CPU_LIMIT_SECONDS
 # (reference + 5 %), MEM_OK, CPU_OK, PROCS_OK (median count <= the reference's) and RESULT.
-# Exit 0 when RESULT=within (all three ok), 1 when RESULT=over, 2 on refusal or bad usage.
+# Exit 0 when RESULT=within (all three ok), 1 when RESULT=over or RESULT=incomplete (an app quit
+# during the run: IDLE_WEIGHT_EXITED names it, the figures cover a shortened window), 2 on refusal
+# or bad usage.
 set -euo pipefail
 
 MINUTES=60
@@ -122,6 +124,7 @@ if [[ -n "$SAMPLES" ]]; then
 else
   [[ "$MINUTES" =~ ^[0-9]+$ && "$MINUTES" -gt 0 ]] || { echo "error: --minutes must be a positive integer" >&2; exit 2; }
   SAMPLES=$((MINUTES * 60 / INTERVAL + 1))
+  ((SAMPLES > 1)) || { echo "error: --minutes too short for --interval (a single sample measures nothing)" >&2; exit 2; }
 fi
 
 # check_side <flag> <pid> <expected pattern> <expected text>: prints the app bundle
@@ -145,6 +148,7 @@ reference_app="$(check_side --reference "$REFERENCE_PID" 'com.cmuxterm.app.stagi
 OUT="${OUT:-$(mktemp -d "${TMPDIR:-/tmp}/treelab-idle-weight.XXXXXX")}"
 mkdir -p "$OUT"
 : > "$OUT/samples.tsv"
+rm -f "$OUT/exited.txt"
 
 echo "IDLE_WEIGHT_TREELAB=$TREELAB_PID $treelab_app"
 echo "IDLE_WEIGHT_REFERENCE=$REFERENCE_PID $reference_app"
@@ -229,7 +233,11 @@ if [[ -s "$OUT/exited.txt" ]]; then
   echo "IDLE_WEIGHT_EXITED=$(head -n 1 "$OUT/exited.txt")"
 fi
 
+if [[ -s "$OUT/exited.txt" ]]; then
+  # figures of a shortened window, never a verdict
+  summarize "$OUT/samples.tsv" | sed 's/^RESULT=.*/RESULT=incomplete/' || true
+  exit 1
+fi
 rc=0
 summarize "$OUT/samples.tsv" || rc=$?
-[[ ! -s "$OUT/exited.txt" ]] || rc=1
 exit "$rc"
