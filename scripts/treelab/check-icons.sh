@@ -25,7 +25,10 @@ fail() { echo "FAIL: $*" >&2; failures=$((failures + 1)); }
 CLEAN=(env -i HOME="$HOME" PATH="/usr/bin:/bin:/usr/sbin:/sbin")
 
 # 1. Same image set as upstream's catalog: the one xcodebuild produced, else actool's.
-reference="$(ls "$(dirname "$APP")"/DerivedData/Build/Products/Release/*.app/Contents/Resources/Assets.car 2>/dev/null | head -1 || true)"
+reference=""
+for candidate in "$(dirname "$APP")"/DerivedData/Build/Products/Release/*.app/Contents/Resources/Assets.car; do
+  [[ -f "$candidate" ]] && { reference="$candidate"; break; }
+done
 if [[ -z "$reference" ]]; then
   minimum="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$APP/Contents/Info.plist")"
   mkdir -p "$WORK/upstream"
