@@ -196,7 +196,7 @@ else
 fi
 
 rc=0; out="$(brand apply --name Treelab "$APP" 2>&1)" || rc=$?
-[[ "$rc" == 0 ]] && pass "apply rc 0" || { fail "apply rc $rc"; echo "$out" | tail -5 >&2; }
+if [[ "$rc" == 0 ]]; then pass "apply rc 0"; else fail "apply rc $rc"; echo "$out" | tail -5 >&2; fi
 
 # A. The app's name.
 expect_value "$EN" quit "Quit Treelab"
@@ -204,6 +204,7 @@ expect_value "$EN" restart "Restart Treelab."
 expect_value "$EN" possessive "Treelab's browser"
 expect_value "$EN" upper "Install a Treelab sidebar extension"
 expect_value "$EN" banner "[Treelab] Press Enter to reconnect."
+# shellcheck disable=SC1111 # the curly quotes are the expected text
 expect_value "$EN" quotedLabel "“Treelab processes only” accepts only local processes."
 expect_value "$EN" appFile "Move Treelab.app to /Applications and retry."
 expect_value Contents/Resources/fr.lproj/Localizable.strings quit "Quitter Treelab"
@@ -312,7 +313,7 @@ expect_value "$EN" format "%@ opened in Treelab (%1\$@)"
 expect_value Contents/Resources/fr.lproj/Localizable.strings format "%1\$@ ouvert dans Treelab"
 expect_value Contents/Resources/en.lproj/Localizable.stringsdict windows.count/NSStringLocalizedFormatKey "%#@n@ open in Treelab"
 FORMATS_AFTER="$(for f in "$APP"/Contents/Resources/{en,fr,de,ja,ar}.lproj/Localizable.strings; do format_of "$f"; done)"
-if [[ "$FORMATS_BEFORE" == "$FORMATS_AFTER" ]]; then pass "file formats kept (binary, UTF-16 BOM, old-style)"; else fail "file formats changed: $(echo $FORMATS_BEFORE) -> $(echo $FORMATS_AFTER)"; fi
+if [[ "$FORMATS_BEFORE" == "$FORMATS_AFTER" ]]; then pass "file formats kept (binary, UTF-16 BOM, old-style)"; else fail "file formats changed: $(tr '\n' ' ' <<< "$FORMATS_BEFORE") -> $(tr '\n' ' ' <<< "$FORMATS_AFTER")"; fi
 if [[ "$(head -c 1 "$APP/Contents/Resources/ja.lproj/Localizable.strings")" == '"' ]]; then
   pass "old-style .strings stays old-style"
 else
