@@ -15909,7 +15909,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             return true
         }
 
-        if matchConfiguredShortcut(event: event, action: .sendFeedback) {
+        // Not offered (Treelab): the chord stays free, like an action Settings hides.
+        if KeyboardShortcutSettings.isOffered(.sendFeedback),
+           matchConfiguredShortcut(event: event, action: .sendFeedback) {
             guard let targetContext = preferredMainWindowContextForShortcuts(event: event),
                   let targetWindow = targetContext.window ?? windowForMainWindowId(targetContext.windowId) else {
                 return false

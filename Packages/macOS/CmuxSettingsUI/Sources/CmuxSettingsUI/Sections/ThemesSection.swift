@@ -99,7 +99,7 @@ public struct ThemesSection: View {
                     if displayedAccentColor.mode == .custom {
                         HexColorPicker(
                             storedHex: displayedAccentColor.customHex ?? "",
-                            fallback: Color(nsColor: CmuxAccentColor.cmuxBlue(isDark: colorScheme == .dark)),
+                            fallback: Color(nsColor: CmuxAccentColor.brandAccent(isDark: colorScheme == .dark)),
                             reconcileRevision: accentColor.revision &+ accentColorCustomHex.revision
                         ) { hex in
                             requestAccentColor(mode: .custom, customHex: hex)
