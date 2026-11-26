@@ -9,7 +9,10 @@
 #      prints KEY=value lines;
 #   D. --summarize on synthetic samples: median and max memory, CPU used during the window (a
 #      process gone or born during it counted right), median and max process count, the
-#      reference + 5 % limits and the result (processes over the reference = over, rc 1).
+#      reference + 5 % limits and the result (processes, memory or CPU over the reference = over, rc 1);
+#   E. an app that quits during the measurement gives RESULT=incomplete (rc 1), an exit recorded by an
+#      earlier run in the same --out folder is not carried over, and --minutes too short for
+#      --interval (a single sample) is refused, rc 2.
 # The processes are a tiny waiting program compiled here (macOS kills a copied system binary)
 # inside throwaway .app bundles: the real cmux is never looked at.
 # Usage: scripts/treelab/test-idle-weight.sh   (exit 0 = all pass)
@@ -139,6 +142,52 @@ synthetic 3
 RC=0; "$SCRIPT" --summarize "$WORK/synthetic-3.tsv" > "$WORK/D2.stdout" 2>"$WORK/D2.stderr" || RC=$?
 expect "D2: reference median 3 processes" test "$(value REFERENCE_PROCS_MEDIAN "$WORK/D2.stdout")" = 3
 expect "D2: result within, rc 0" test "$(value RESULT "$WORK/D2.stdout")/$RC" = within/0
+# Treelab 10 % over the reference, in memory (D3) then in CPU (D4): one process each side
+over() {   # $1 = file, $2 = Treelab MiB, $3 = Treelab CPU at the end
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+    0 treelab 10 0 $(($2 * MIB)) app 30 treelab 10 0.50 $(($2 * MIB)) app 60 treelab 10 "$3" $(($2 * MIB)) app \
+    0 reference 20 0 $((100 * MIB)) ref 30 reference 20 0.50 $((100 * MIB)) ref 60 reference 20 1.00 $((100 * MIB)) ref > "$1"
+}
+over "$WORK/D3.tsv" 110 1.00
+RC=0; "$SCRIPT" --summarize "$WORK/D3.tsv" > "$WORK/D3.stdout" 2>&1 || RC=$?
+expect "D3: memory 10 % over the reference" test "$(value MEM_OK "$WORK/D3.stdout")/$(value CPU_OK "$WORK/D3.stdout")" = no/yes
+expect "D3: result over, rc 1" test "$(value RESULT "$WORK/D3.stdout")/$RC" = over/1
+over "$WORK/D4.tsv" 100 1.10
+RC=0; "$SCRIPT" --summarize "$WORK/D4.tsv" > "$WORK/D4.stdout" 2>&1 || RC=$?
+expect "D4: CPU 10 % over the reference" test "$(value MEM_OK "$WORK/D4.stdout")/$(value CPU_OK "$WORK/D4.stdout")" = yes/no
+expect "D4: result over, rc 1" test "$(value RESULT "$WORK/D4.stdout")/$RC" = over/1
+
+# E1. an app that quits during the measurement makes it incomplete, never "within"
+fake_app TreelabE sh.treelab.app; tle_pid="$FAKE_PID"
+fake_app cmuxrefE "com.cmuxterm.app.staging.treelab.ref"; refe_pid="$FAKE_PID"
+RC=0
+"$SCRIPT" --treelab "$tle_pid" --reference "$refe_pid" --interval 1 --samples 4 --out "$WORK/E1" \
+  > "$WORK/E1.stdout" 2>&1 &
+measure_pid=$!
+sleep 1.5
+kill "$refe_pid"; wait "$refe_pid" 2>/dev/null || true
+wait "$measure_pid" || RC=$?
+expect "E1: the exit is reported" grep -q "^IDLE_WEIGHT_EXITED=pid $refe_pid exited" "$WORK/E1.stdout"
+expect "E1: result incomplete, rc 1" test "$(value RESULT "$WORK/E1.stdout")/$RC" = incomplete/1
+
+# E2. an exit recorded by an earlier run in the same --out folder is not carried over
+mkdir -p "$WORK/E2"; echo "pid 1 exited before sample 0" > "$WORK/E2/exited.txt"
+RC=0
+"$SCRIPT" --treelab "$treelab_pid" --reference "$ref_pid" --interval 1 --samples 2 --out "$WORK/E2" \
+  > "$WORK/E2.stdout" 2>&1 || RC=$?
+expect "E2: no earlier exit reported" test -z "$(value IDLE_WEIGHT_EXITED "$WORK/E2.stdout")"
+expect "E2: a complete result" grep -Eq '^RESULT=(within|over)$' "$WORK/E2.stdout"
+
+# E3. --minutes too short for --interval (one sample, nothing measured) is refused
+run_guard_minutes() {
+  RC=0
+  "$SCRIPT" --treelab "$treelab_pid" --reference "$ref_pid" --minutes 1 --interval 90 --out "$WORK/E3" \
+    > "$WORK/E3.stdout" 2> "$WORK/E3.stderr" || RC=$?
+}
+run_guard_minutes
+expect "E3: rc 2" test "$RC" -eq 2
+expect "E3: says the window is too short" grep -q "error: --minutes too short for --interval" "$WORK/E3.stderr"
+expect "E3: no measurement folder" test ! -e "$WORK/E3"
 
 if ((failures)); then echo "$failures failure(s)" >&2; exit 1; fi
 echo "all idle-weight tests passed"
