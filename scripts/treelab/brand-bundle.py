@@ -46,6 +46,7 @@ from pathlib import Path
 RULES_PATH = Path(__file__).resolve().parent / "brand" / "rules.json"
 CLASSES = ("cli", "gpl", "commande", "adresse", "fichier")
 ASCII_WORD = re.compile(r"[A-Za-z0-9]")
+URL_CHAR = re.compile(r"[!-~]")  # printable ASCII without space: what a URL is made of
 
 
 class Rules:
@@ -71,6 +72,7 @@ class Rules:
             r"\.(?:" + "|".join(map(re.escape, data["brand_file_suffixes"])) + r")(?![A-Za-z0-9])"
         )
         self.glued_prefix = set(data["glued_prefix_chars"])
+        self.declined_forms = {form.lower() for form in data["declined_forms"]}
         self.glued_suffix = set(data["glued_suffix_chars"])
         self.info_keys = [re.compile(p) for p in data["info_plist_visible_keys"]]
         self.sdef_attributes = data["sdef_attributes"]
@@ -108,15 +110,21 @@ class Rules:
             return "commande"
         if any(p.match(after) for p in self.prose_commands):
             return "commande"
-        token_start = max(before.rfind(c) for c in " \n\t") + 1
-        token_end = min([i for i in (after.find(" "), after.find("\n")) if i >= 0] or [len(after)])
-        token = before[token_start:] + text[start:end] + after[:token_end]
+        token_start, token_end = start, end
+        while token_start > 0 and URL_CHAR.match(text[token_start - 1]):
+            token_start -= 1
+        while token_end < len(text) and URL_CHAR.match(text[token_end]):
+            token_end += 1
+        token = text[token_start:token_end]
         if previous == "@" or "://" in token or self.address_suffix.match(after):
             return "adresse"
         if self.brand_file_suffix.match(after):
             return None  # cmux.app is the app's own bundle name
         if previous and (ASCII_WORD.match(previous) or previous in self.glued_prefix):
             return "fichier"
+        ending = re.match(r"[A-Za-z]*", after).group(0)
+        if ending and (text[start:end] + ending).lower() in self.declined_forms:
+            return None  # the name declined (Bosnian cmuxa, cmuxu): the ending stays
         if after[:1] and (ASCII_WORD.match(after[0]) or after[0] in self.glued_suffix):
             return "fichier"
         if re.match(r"[.:][A-Za-z0-9]", after) or self.hyphen_suffixes.match(after):
@@ -253,50 +261,61 @@ def markup_spans(rules: Rules, kind: str, text: str):
     return [(m.start(1), m.end(1)) for m in pattern.finditer(text)]
 
 
-def missing_fallbacks(rules: Rules, app: Path, brand: str) -> dict[str, dict[str, tuple[str, str]]]:
-    """English texts the brand changes that a main-table language lacks, per language.
+def missing_fallbacks(rules: Rules, app: Path, names_app) -> dict[Path, dict[str, tuple[str, str]]]:
+    """Keys whose English text names the app and that a language's table lacks, per table.
 
     For a key missing from the user's language, macOS shows the English default compiled in the
-    binary (cmux included), never the en table. Some upstream package code also calls
-    String(localized:defaultValue:) without `bundle:`, so its keys are looked up in the app's
-    main Localizable table. Each key whose English text the brand changes (not a CLI text) is
-    planned for every main language that lacks it: the app's own English text first, else the
-    package's translation in that language, else the package's English text. Each entry keeps
-    the language of its text, so a key_overrides entry is looked up in that language. Read before
-    any rewrite, so the plan is the same whatever the order of the files.
+    binary (cmux included), never the en table. So every table gets the keys of its own en table
+    that `names_app(key, text)` accepts (not CLI texts): the app's main tables, and each package
+    table (read with `bundle: .module`). Some upstream package code also calls
+    String(localized:defaultValue:) without `bundle:`, so package keys are planned for the main
+    tables too: the app's own English text first, else the package's translation in that
+    language, else the package's English text. Each entry keeps the language of its text, so a
+    key_overrides entry is looked up in that language. Read before any rewrite, so the plan is
+    the same whatever the order of the files.
     """
     resources = app / "Contents" / "Resources"
-    languages = sorted(p.name[: -len(".lproj")] for p in resources.glob("*.lproj")
-                       if (p / "Localizable.strings").is_file())
-    main_keys = {lang: set(load_plist(resources / f"{lang}.lproj" / "Localizable.strings")[0])
-                 for lang in languages}
-    sources = [resources] + [b / "Contents" / "Resources" for b in sorted(resources.glob("*.bundle"))]
-    plan: dict[str, dict[str, tuple[str, str]]] = {}
-    for source in sources:
-        english_path = source / "en.lproj" / "Localizable.strings"
-        if not english_path.is_file():
+
+    def tables(source: Path) -> dict[str, Path]:
+        return {p.name[: -len(".lproj")]: p / "Localizable.strings" for p in sorted(source.glob("*.lproj"))
+                if (p / "Localizable.strings").is_file()}
+
+    def keys_naming_app(table: Path) -> dict[str, str]:
+        return {k: v for k, v in load_plist(table)[0].items()
+                if isinstance(v, str) and not rules.is_cli_key(k) and names_app(k, v)}
+
+    main_tables = tables(resources)
+    main_keys = {lang: set(load_plist(path)[0]) for lang, path in main_tables.items()}
+    plan: dict[Path, dict[str, tuple[str, str]]] = {}
+    packages = [b / "Contents" / "Resources" for b in sorted(resources.glob("*.bundle"))]
+    for source in [resources] + packages:
+        own = main_tables if source == resources else tables(source)
+        if "en" not in own:
             continue
-        english = load_plist(english_path)[0]
-        candidates = {k: v for k, v in english.items()
-                      if isinstance(v, str) and not rules.is_cli_key(k)
-                      and (rebrand(rules, v, k, brand)[0] != v or rules.override(k, "en", brand) is not None)}
+        candidates = keys_naming_app(own["en"])
         if not candidates:
             continue
-        for lang in languages:
-            local_path = source / f"{lang}.lproj" / "Localizable.strings"
-            local = load_plist(local_path)[0] if source != resources and local_path.is_file() else {}
+        local = {lang: load_plist(path)[0] for lang, path in own.items()} if source != resources else {}
+        for lang, path in main_tables.items():
             for key, text in candidates.items():
                 if key in main_keys[lang]:
                     continue
-                translated = local.get(key)
+                translated = local.get(lang, {}).get(key)
                 entry = (translated, lang) if isinstance(translated, str) else (text, "en")
-                plan.setdefault(lang, {}).setdefault(key, entry)
+                plan.setdefault(path, {}).setdefault(key, entry)
+        if source != resources:
+            for lang, path in own.items():
+                for key, text in candidates.items():
+                    if key not in local[lang]:
+                        plan.setdefault(path, {}).setdefault(key, (text, "en"))
     return plan
 
 
 def apply(rules: Rules, app: Path, brand: str) -> int:
     changed_files, replaced_total = 0, 0
-    fallbacks = missing_fallbacks(rules, app, brand)
+    fallbacks = missing_fallbacks(
+        rules, app,
+        lambda key, text: rebrand(rules, text, key, brand)[0] != text or rules.override(key, "en", brand) is not None)
     for kind, path in text_files(app):
         replaced = 0
         if kind in ("strings", "info"):
@@ -330,8 +349,7 @@ def apply(rules: Rules, app: Path, brand: str) -> int:
             replaced_total += replaced
             print(f"changed: {path.relative_to(app)}")
     added_total = 0
-    for lang, entries in sorted(fallbacks.items()):
-        path = app / "Contents" / "Resources" / f"{lang}.lproj" / "Localizable.strings"
+    for path, entries in sorted(fallbacks.items()):
         data, form = load_plist(path)
         added = 0
         for key, (text, text_language) in entries.items():
@@ -351,7 +369,7 @@ def apply(rules: Rules, app: Path, brand: str) -> int:
     return 0
 
 
-def check(rules: Rules, app: Path) -> int:
+def check(rules: Rules, app: Path, brand: str | None) -> int:
     counts = Counter()
     unexplained = []
     for kind, path in text_files(app):
@@ -371,7 +389,19 @@ def check(rules: Rules, app: Path) -> int:
     print(f"UNEXPLAINED={len(unexplained)}")
     for line in unexplained[:25]:
         print(f"unexplained: {line}")
-    return 1 if unexplained else 0
+
+    def names_app(key: str, text: str) -> bool:
+        if brand and brand in text:
+            return True
+        return any(cls is None for _, cls in occurrences(rules, text, key))
+
+    missing = [f"{path.relative_to(app)} {key}"
+               for path, entries in sorted(missing_fallbacks(rules, app, names_app).items())
+               for key in entries]
+    print(f"MISSING={len(missing)}")
+    for line in missing[:25]:
+        print(f"missing: {line}")
+    return 1 if unexplained or missing else 0
 
 
 def main(argv: list[str]) -> int:
@@ -381,6 +411,7 @@ def main(argv: list[str]) -> int:
     apply_parser.add_argument("--name", required=True, help="the brand name (AppBranding.displayName)")
     apply_parser.add_argument("app")
     check_parser = sub.add_parser("check")
+    check_parser.add_argument("--name", help="the brand name (default: the app's CFBundleName)")
     check_parser.add_argument("app")
     args = parser.parse_args(argv)
     app = Path(args.app)
@@ -394,7 +425,13 @@ def main(argv: list[str]) -> int:
                 print("error: the brand name contains the upstream name", file=sys.stderr)
                 return 2
             return apply(rules, app, args.name)
-        return check(rules, app)
+        brand = args.name
+        info = app / "Contents" / "Info.plist"
+        if brand is None and info.is_file():
+            brand = plistlib.loads(info.read_bytes()).get("CFBundleName")
+        if brand and rules.pattern.search(brand):
+            brand = None  # an upstream build: only unexplained "cmux" names the app
+        return check(rules, app, brand)
     except (OSError, ValueError, plistlib.InvalidFileException, subprocess.CalledProcessError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2

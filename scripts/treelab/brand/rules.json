@@ -210,6 +210,11 @@
   "brand_file_suffixes": [
     "app"
   ],
+  "declined_forms": [
+    "cmuxa",
+    "cmuxu",
+    "cmuxom"
+  ],
   "glued_prefix_chars": "_./$~@&\\",
   "glued_suffix_chars": "_/",
   "info_plist_visible_keys": [

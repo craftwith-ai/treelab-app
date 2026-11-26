@@ -12,7 +12,8 @@
 #   C. format specifiers (%@, %1$@, %#@n@) and each file's format and encoding are kept,
 #      every file still passes plutil -lint;
 #   D. a second pass changes nothing;
-#   E. "check" fails (rc 1) before the pass and after a new unexplained "cmux", passes after it.
+#   E. "check" fails (rc 1) before the pass, after a new unexplained "cmux" and when a language lacks
+#      a key whose English text names the app (MISSING); passes after the pass.
 # Usage: scripts/treelab/test-brand-bundle.sh   (exit 0 = all pass)
 set -euo pipefail
 
@@ -112,13 +113,20 @@ write(os.path.join(res, "ja.lproj", "Localizable.strings"), {
     "launch": "cmuxを起動",
     "installCLI": "シェルコマンド: 'cmux'をPATHにインストール",
     "settings.app.accentColor.cmux": "cmux ブルー",
+    "hostList": "ターミナルのリンククリックおよびインターセプトされた`open https://...`呼び出しに適用されます。これらのホストのみcmuxで開きます。空欄にするとすべてのホストをcmuxで開きます。",
+    "docsThenApp": "https://cmux.com/docs を参照。cmuxを再起動",
 }, "openstep")
 write(os.path.join(res, "ar.lproj", "Localizable.strings"), {
     "lost": "فقد CMUX الاتصال بالامتداد.",
     "load": "تعذر على cmux تحميل الإعدادات.",
 }, "binary")
+write(os.path.join(res, "zh-Hans.lproj", "Localizable.strings"), {
+    "port": "新窗格请求 http://127.0.0.1:%lld。如果该端口被占用，cmux 会选择另一个环回端口。",
+}, "binary")
 write(os.path.join(res, "bs.lproj", "Localizable.strings"), {
     "load": "cmux ne može učitati postavke.",
+    "helper": "Pomoćnik se ponovo pokreće bez zatvaranja cmuxa.",
+    "inside": "Nijedna komanda ne radi u cmuxu.",
 }, "binary")
 write(os.path.join(res, "CmuxFoundation_CmuxFoundation.bundle", "Contents", "Resources", "en.lproj", "Localizable.strings"), {
     "nested": "cmux could not reach the server.",
@@ -134,6 +142,9 @@ write(os.path.join(sub, "en.lproj", "Localizable.strings"), {
 write(os.path.join(sub, "fr.lproj", "Localizable.strings"), {
     "settings.sub.note": "cmux le garde.",
     "settings.sub.plain": "Pas de marque ici.",
+}, "xml-utf16")
+write(os.path.join(sub, "de.lproj", "Localizable.strings"), {
+    "settings.sub.plain": "Keine Marke hier.",
 }, "xml-utf16")
 write(os.path.join(app, "Contents", "Library", "cmux Computer Use.app", "Contents", "Resources", "en.lproj", "InfoPlist.strings"), {
     "NSAccessibilityUsageDescription": "cmux Computer Use controls apps only when you ask.",
@@ -246,6 +257,20 @@ for missing in json backtick env identifier; do
   fi
 done
 
+# A5. A package table read with bundle: .module also gets the branded English text it lacks.
+SUB=Contents/Resources/CmuxSettingsUI_CmuxSettingsUI.bundle/Contents/Resources
+expect_value "$SUB/de.lproj/Localizable.strings" settings.sub.note "Treelab keeps it."
+expect_value "$SUB/fr.lproj/Localizable.strings" settings.sub.note "Treelab le garde."
+
+# A6. Without spaces (ja, zh), a URL earlier in the sentence does not make the app's name an address.
+expect_value Contents/Resources/ja.lproj/Localizable.strings hostList "ターミナルのリンククリックおよびインターセプトされた\`open https://...\`呼び出しに適用されます。これらのホストのみTreelabで開きます。空欄にするとすべてのホストをTreelabで開きます。"
+expect_value Contents/Resources/zh-Hans.lproj/Localizable.strings port "新窗格请求 http://127.0.0.1:%lld。如果该端口被占用，Treelab 会选择另一个环回端口。"
+expect_value Contents/Resources/ja.lproj/Localizable.strings docsThenApp "https://cmux.com/docs を参照。Treelabを再起動"
+
+# A7. Declined forms of the name (Bosnian genitive, locative) keep their ending.
+expect_value Contents/Resources/bs.lproj/Localizable.strings helper "Pomoćnik se ponovo pokreće bez zatvaranja Treelaba."
+expect_value Contents/Resources/bs.lproj/Localizable.strings inside "Nijedna komanda ne radi u Treelabu."
+
 # B. Technical names stay.
 expect_value "$EN" backtick "Run \`cmux docs settings\` to list them."
 expect_value "$EN" quotedCommand "Retry 'cmux restore --surface'."
@@ -330,6 +355,23 @@ if [[ "$rc" == 1 ]] && grep -q '^UNEXPLAINED=1$' <<< "$out" && grep -q 'cmux hat
   pass "check names a new unexplained cmux (rc 1)"
 else
   fail "check after a new cmux: rc $rc"; echo "$out" | tail -5 >&2
+fi
+# A language table that lacks a key whose English text names the app shows the binary's default:
+# check counts it (MISSING) and fails.
+python3 -I - "$APP/Contents/Resources/de.lproj/Localizable.strings" <<'PY'
+import plistlib, sys
+path = sys.argv[1]
+data = plistlib.load(open(path, "rb"))
+data.pop("new")
+data.pop("restart")
+plistlib.dump(data, open(path, "wb"), fmt=plistlib.FMT_BINARY, sort_keys=False)
+PY
+rc=0; out="$(brand check --name Treelab "$APP" 2>&1)" || rc=$?
+if [[ "$rc" == 1 ]] && grep -q '^UNEXPLAINED=0$' <<< "$out" && grep -q '^MISSING=1$' <<< "$out" \
+  && grep -q 'de.lproj/Localizable.strings restart' <<< "$out"; then
+  pass "check names a language that lacks a branded key (rc 1)"
+else
+  fail "check after removing a branded key: rc $rc"; echo "$out" | tail -5 >&2
 fi
 
 if ((failures > 0)); then
