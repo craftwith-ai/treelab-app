@@ -139,12 +139,15 @@ public final class LanesModel {
         defer { isReadingQuestion = false }
         let output = try? await runner.run(.question(project: project, lane: laneName))
         guard selectedRequest?.id == lane.id else { return }
+        let before = (lane: questionLaneID, qid: Self.qid(of: question))
         questionLaneID = lane.id
         if let output, output.status == 0, let block = parser.blocks(in: output.standardOutput).first {
             question = LabQuestion.parse(block)
         } else {
             question = .none
         }
+        // Picks belong to the question they were made for: a new question drops them.
+        if before.lane != lane.id || before.qid != Self.qid(of: question) { picks = [:] }
     }
 
     /// Answers the selected lane's question box with the user's choices (`lab ginkgo answer --qid … --q n --choice c`).
@@ -289,6 +292,12 @@ public final class LanesModel {
             // lab wrote the selected lane again: it may ask something new.
             Task { await readQuestion() }
         }
+    }
+
+    /// The question id of a box, `nil` otherwise.
+    private static func qid(of question: LabQuestion) -> String? {
+        if case let .box(qid, _) = question { return qid }
+        return nil
     }
 
     /// A problem in one line, for the notice.

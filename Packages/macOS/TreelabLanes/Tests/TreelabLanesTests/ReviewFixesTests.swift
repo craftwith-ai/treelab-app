@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import os
 
 @testable import TreelabLanes
 
@@ -112,6 +113,30 @@ struct ReviewFixesTests {
         try tmp.write("work/demo/.worktrees/api/.lab/waits-for", "q2\n", mode: 0o600, date: Date(timeIntervalSince1970: 1_700_000_500))
         entries.emit(snap.appendingPathComponent("projects/demo/lanes").path)
         #expect(await eventually { await asked() > second })
+    }
+
+    // Security review of the fixes: picks belong to the question they were made for. When lab
+    // asks a new question (new QID) before Send, the old picks are dropped, never sent with it.
+    @Test("picks made for one question are never sent with the next one")
+    func picksBelongToTheirQuestion() async throws {
+        let tmp = try TemporaryFolder()
+        let entries = ScriptedWatcher()
+        let snap = try fixture(tmp)
+        let asked = OSAllocatedUnfairLock(initialState: Self.twoQuestions)
+        let runner = RecordingLabRunner { command in
+            LabCommandOutput(status: 0, standardOutput: command.arguments.prefix(2) == ["ginkgo", "question"] ? asked.withLock { $0 } : "", standardError: "")
+        }
+        let model = await model(snap, runner, entries: entries)
+        await opened(model)
+        #expect(model.pressDigit(2))
+        #expect(model.picks == [1: [2]])
+        asked.withLock { $0 = Self.twoQuestions.replacingOccurrences(of: "QID=q-2", with: "QID=q-3") }
+        try tmp.write("work/demo/.worktrees/api/.lab/waits-for", "q3\n", mode: 0o600, date: Date(timeIntervalSince1970: 1_700_000_900))
+        entries.emit(snap.appendingPathComponent("projects/demo/lanes").path)
+        #expect(await eventually { await MainActor.run { if case let .box(qid, _) = model.question { qid == "q-3" } else { false } } })
+        #expect(model.picks.isEmpty)
+        await model.submit()
+        #expect(await !runner.commands.contains { if case .answerChoices = $0 { true } else { false } })
     }
 
     // Finding 12: a question id lab cannot have written is said, not silently dropped.
