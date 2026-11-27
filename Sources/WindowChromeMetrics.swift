@@ -99,8 +99,8 @@ enum SidebarWorkspaceListMetrics {
     /// which left the first row partly transparent at rest; over a light
     /// terminal-matched backdrop that washed out the selected row's top.
     static var topScrimHeight: CGFloat { firstRowTopOffset }
-    /// Treelab: the Ginkgo entry sits above the footer, so the last row can scroll above it.
-    static let bottomScrimHeight: CGFloat = homeRowTopOffset + 20 + GinkgoBarEntry.height
+    /// Treelab: the Ginkgo and account entries sit above the footer, so the last row can scroll above them.
+    static let bottomScrimHeight: CGFloat = homeRowTopOffset + 20 + GinkgoBarEntry.height + AccountBarEntry.height
 
     static var trailingAccessoryRightEdgeOffset: CGFloat {
         rowOuterHorizontalPadding + rowContentHorizontalPadding

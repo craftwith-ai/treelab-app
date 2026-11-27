@@ -12214,10 +12214,13 @@ struct VerticalTabsSidebar: View, Equatable {
             }
         }
         .overlay(alignment: .bottom) {
-            // Treelab: Ginkgo, above the footer; it opens the voice screen in this window.
+            // Treelab: Ginkgo, then the account (it opens Treelab's settings window), above the footer.
             if isPresented, let appDelegate = AppDelegate.shared {
-                GinkgoBarEntry(model: appDelegate.treelabGinkgo)
-                    .padding(.bottom, 34)
+                VStack(spacing: 0) {
+                    GinkgoBarEntry(model: appDelegate.treelabGinkgo)
+                    AccountBarEntry(center: appDelegate.treelabAccount)
+                }
+                .padding(.bottom, 34)
             }
         }
         .accessibilityIdentifier("Sidebar")
