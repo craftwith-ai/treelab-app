@@ -28,6 +28,15 @@ final class TemporaryFolder {
         return file
     }
 
+    /// Replaces a file as lab does: a hidden temporary file, then an atomic rename.
+    func replaceLikeLab(_ relative: String, _ text: String) throws {
+        let file = url.appendingPathComponent(relative)
+        let temp = file.deletingLastPathComponent().appendingPathComponent(".\(file.lastPathComponent).tmp.\(getpid())")
+        try text.write(to: temp, atomically: false, encoding: .utf8)
+        chmod(temp.path, 0o644)
+        guard rename(temp.path, file.path) == 0 else { throw CocoaError(.fileWriteUnknown) }
+    }
+
     func folder(_ relative: String, mode: mode_t = 0o700) throws -> URL {
         let folder = url.appendingPathComponent(relative)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

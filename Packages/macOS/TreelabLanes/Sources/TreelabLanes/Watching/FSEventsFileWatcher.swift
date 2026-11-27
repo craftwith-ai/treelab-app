@@ -2,7 +2,8 @@ import CoreServices
 public import Foundation
 
 /// Watches folders with FSEvents: one stream for many paths, woken by the system only when a
-/// file changes, never by a timer.
+/// file changes, never by a timer. Used for documents lanes edit in place (batch files), which a
+/// folder watch cannot see.
 public struct FSEventsFileWatcher: FileEventWatching {
     private let latency: TimeInterval
 
@@ -47,7 +48,7 @@ public struct FSEventsFileWatcher: FileEventWatching {
             let queue = DispatchQueue(label: "sh.treelab.lanes.fsevents")
             FSEventStreamSetDispatchQueue(stream, queue)
             FSEventStreamStart(stream)
-            let handle = FSEventsStreamHandle(stream: stream)
+            let handle = FSEventsStreamHandle(stream: stream, queue: queue)
             continuation.onTermination = { _ in handle.stop() }
         }
     }
@@ -64,7 +65,11 @@ private final class FSEventsStreamHandle: Sendable {
     // FSEventStreamRef is a C pointer, not Sendable; it is only touched once, in stop(),
     // after the stream was started, from the termination handler.
     nonisolated(unsafe) let stream: FSEventStreamRef
-    init(stream: FSEventStreamRef) { self.stream = stream }
+    let queue: DispatchQueue
+    init(stream: FSEventStreamRef, queue: DispatchQueue) {
+        self.stream = stream
+        self.queue = queue
+    }
     func stop() {
         FSEventStreamStop(stream)
         FSEventStreamInvalidate(stream)
