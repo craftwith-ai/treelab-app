@@ -211,7 +211,8 @@ struct AccountSettingsSection: View {
         if let account = model.snapshot {
             SettingsColumns(width: width) {
                 AccountCard(model: model, account: account)
-                SeatsCard(account: account)
+                // Seats belong to a signed-in account.
+                if account.signedIn { SeatsCard(account: account) }
             } right: {
                 SubscriptionCard(model: model, account: account)
             }
