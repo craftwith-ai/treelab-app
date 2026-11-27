@@ -15369,6 +15369,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
            !(feedWindow.firstResponder is NSText),
            let digit = LanesModel.choiceDigit(
                event.charactersIgnoringModifiers,
+               keyCode: event.keyCode,
                withModifiers: !event.modifierFlags.intersection([.command, .control, .option]).isEmpty
            ),
            treelabLanes.pressDigit(digit) {

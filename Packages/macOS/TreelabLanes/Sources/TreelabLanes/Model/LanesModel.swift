@@ -182,17 +182,28 @@ public final class LanesModel {
         if selectedRequest?.id == lane.id { await readQuestion() }
     }
 
-    /// The choice a key press stands for: a single digit 1 to 9 typed without Command, Control or
-    /// Option (the app's key monitor hands it to ``pressDigit(_:)`` while the Feed is shown).
+    /// The choice a key press stands for: the key marked 1 to 9, on the number row or the keypad,
+    /// whatever the keyboard layout (on a French keyboard that key types « é » without Shift), or
+    /// a typed digit 1 to 9; never with Command, Control or Option held. The app's key monitor
+    /// hands it to ``pressDigit(_:)`` while the Feed is shown.
     /// - Parameters:
     ///   - characters: the key's characters, modifiers ignored.
+    ///   - keyCode: the key's virtual key code (its place on the keyboard).
     ///   - withModifiers: whether Command, Control or Option is held.
     /// - Returns: 1 to 9, or `nil`.
-    nonisolated public static func choiceDigit(_ characters: String?, withModifiers: Bool) -> Int? {
-        guard !withModifiers, let scalars = characters?.unicodeScalars, scalars.count == 1,
+    nonisolated public static func choiceDigit(_ characters: String?, keyCode: UInt16, withModifiers: Bool) -> Int? {
+        guard !withModifiers else { return nil }
+        if let digit = digitKeys[keyCode] { return digit }
+        guard let scalars = characters?.unicodeScalars, scalars.count == 1,
               let scalar = scalars.first, ("1"..."9").contains(scalar) else { return nil }
         return Int(scalar.value - 48)
     }
+
+    /// Virtual key codes of the keys marked 1 to 9: number row, then keypad.
+    nonisolated private static let digitKeys: [UInt16: Int] = [
+        18: 1, 19: 2, 20: 3, 21: 4, 23: 5, 22: 6, 26: 7, 28: 8, 25: 9,
+        83: 1, 84: 2, 85: 3, 86: 4, 87: 5, 88: 6, 89: 7, 91: 8, 92: 9,
+    ]
 
     /// Key 1 to 9: picks that option of the first question (``pick(question:option:)``).
     /// - Parameter digit: the key pressed.

@@ -329,11 +329,25 @@ struct ScreenFindingsTests {
     // The Feed got no digit: the app's key monitor now hands plain 1–9 to the model.
     @Test("only a plain digit 1 to 9 picks a choice")
     func choiceDigit() {
-        #expect(LanesModel.choiceDigit("2", withModifiers: false) == 2)
-        #expect(LanesModel.choiceDigit("9", withModifiers: false) == 9)
-        for other in ["0", "12", "a", "", "²", "٣"] { #expect(LanesModel.choiceDigit(other, withModifiers: false) == nil, "\(other)") }
-        #expect(LanesModel.choiceDigit(nil, withModifiers: false) == nil)
-        #expect(LanesModel.choiceDigit("2", withModifiers: true) == nil, "Command-2 and the like stay shortcuts")
+        // keyCode 0 is the A key: the characters alone decide.
+        #expect(LanesModel.choiceDigit("2", keyCode: 0, withModifiers: false) == 2)
+        #expect(LanesModel.choiceDigit("9", keyCode: 0, withModifiers: false) == 9)
+        for other in ["0", "12", "a", "", "²", "٣"] { #expect(LanesModel.choiceDigit(other, keyCode: 0, withModifiers: false) == nil, "\(other)") }
+        #expect(LanesModel.choiceDigit(nil, keyCode: 0, withModifiers: false) == nil)
+        #expect(LanesModel.choiceDigit("2", keyCode: 19, withModifiers: true) == nil, "Command-2 and the like stay shortcuts")
+    }
+
+    // Seen on the screens: on a French keyboard the key marked 2 types « é » without Shift, and
+    // the Feed picked nothing. The key's place on the number row (or the keypad) decides too.
+    @Test("the key marked 1 to 9 picks a choice on any keyboard layout")
+    func choiceDigitAnyLayout() {
+        #expect(LanesModel.choiceDigit("&", keyCode: 18, withModifiers: false) == 1)
+        #expect(LanesModel.choiceDigit("é", keyCode: 19, withModifiers: false) == 2)
+        #expect(LanesModel.choiceDigit("\"", keyCode: 20, withModifiers: false) == 3)
+        #expect(LanesModel.choiceDigit("ç", keyCode: 25, withModifiers: false) == 9)
+        #expect(LanesModel.choiceDigit("2", keyCode: 84, withModifiers: false) == 2, "keypad 2")
+        #expect(LanesModel.choiceDigit("à", keyCode: 29, withModifiers: false) == nil, "the 0 key picks nothing")
+        #expect(LanesModel.choiceDigit("é", keyCode: 19, withModifiers: true) == nil, "Command stays a shortcut")
     }
 
     // The banner and the Feed showed lab's English prefixes ("question waiting: …").
