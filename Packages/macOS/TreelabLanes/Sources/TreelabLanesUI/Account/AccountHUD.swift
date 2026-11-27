@@ -18,7 +18,7 @@ struct AccountScreenSize: Equatable {
     var cardSpacing: CGFloat { isLarge ? 18 : 14 }
 }
 
-/// A card of the HUD: a title in capitals, then its content.
+/// A card of the HUD: a title in capitals (whatever the text's case), then its content.
 struct HUDCard<Content: View>: View {
     let title: String
     var accent: Color? = nil
@@ -29,6 +29,7 @@ struct HUDCard<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
+                .textCase(.uppercase)
                 .font(.system(size: size.small, weight: .semibold))
                 .tracking(1.6)
                 .foregroundStyle(accent ?? palette.textSecondary)
