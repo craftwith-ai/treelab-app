@@ -98,3 +98,14 @@ struct AccountScreensTests {
         #expect(!store.bool(forKey: TreelabAccountCenter.welcomeSeenKey))
     }
 }
+
+@Suite("Welcome footer")
+struct WelcomeFooterTests {
+    @Test("every step of the welcome offers Later; the first and the last close it, the others skip their step")
+    func laterEverywhere() {
+        let footers = (1...TreelabWelcomeView.stepCount).map { WelcomeFooter(step: $0) }
+        #expect(footers.map(\.later) == [.closes, .skipsStep, .skipsStep, .closes])
+        #expect(footers.map(\.back) == [false, true, true, true])
+        #expect(footers.map(\.isLast) == [false, false, false, true])
+    }
+}

@@ -8,7 +8,7 @@ import TreelabAccount
 /// "Later".
 struct TreelabWelcomeView: View {
     /// The number of steps.
-    static let stepCount = 4
+    nonisolated static let stepCount = 4
 
     let model: AccountModel
     @Bindable var state: AccountWindowsState
@@ -79,6 +79,23 @@ private struct WelcomeColumn: View {
     }
 }
 
+/// What the welcome's footer offers at a step: "Back" from the second step, "Later" (which skips
+/// the step, or closes the welcome), then "Start", "Continue" or, on the last step, "Enter".
+struct WelcomeFooter: Equatable {
+    /// What "Later" does.
+    enum Later: Equatable { case skipsStep, closes }
+
+    let back: Bool
+    let later: Later?
+    let isLast: Bool
+
+    init(step: Int, count: Int = TreelabWelcomeView.stepCount) {
+        back = step > 1
+        isLast = step >= count
+        later = isLast ? .closes : (step > 1 ? .skipsStep : nil)
+    }
+}
+
 /// The step shown, its place among the four, and the buttons to move on.
 private struct WelcomeSteps: View {
     let model: AccountModel
@@ -116,16 +133,18 @@ private struct WelcomeSteps: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             Rectangle().fill(palette.line).frame(height: 1)
+            let footer = WelcomeFooter(step: step)
             HStack(spacing: 12) {
-                if step > 1 {
+                if footer.back {
                     Button(text.welcomeBack) { go(step - 1) }.buttonStyle(HUDSecondaryButtonStyle())
                 }
                 Spacer(minLength: 12)
-                if step > 1 && step < TreelabWelcomeView.stepCount {
-                    Button(text.welcomeLater) { go(step + 1) }.buttonStyle(HUDSecondaryButtonStyle())
+                switch footer.later {
+                case .skipsStep: Button(text.welcomeLater) { go(step + 1) }.buttonStyle(HUDSecondaryButtonStyle())
+                case .closes: Button(text.welcomeLater, action: finish).buttonStyle(HUDSecondaryButtonStyle())
+                case nil: EmptyView()
                 }
-                if step == TreelabWelcomeView.stepCount {
-                    Button(text.welcomeLater, action: finish).buttonStyle(HUDSecondaryButtonStyle())
+                if footer.isLast {
                     Button(text.welcomeEnter, action: finish).buttonStyle(HUDPrimaryButtonStyle()).keyboardShortcut(.defaultAction)
                 } else {
                     Button(step == 1 ? text.welcomeStart : text.welcomeContinue) { go(step + 1) }
