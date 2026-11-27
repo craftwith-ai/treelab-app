@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import TreelabAccount
 import TreelabLanes
 
 /// A stand-in lab program, run for real by ``ProcessLabCommandRunner``: it writes each argument it
@@ -104,5 +105,37 @@ struct AccountSourceGuardTests {
                 #expect(!text.contains(literal), "\(target): \(literal)")
             }
         }
+    }
+}
+
+@MainActor
+@Suite("The WATCH= file wakes the account for real")
+struct RealWatchTests {
+    @Test("lab rewriting the account file (another program, temporary file then rename) wakes a new reading")
+    func rewrittenByAnotherProgram() async throws {
+        let folder = try ScratchFolder()
+        let file = folder.url.appendingPathComponent("account")
+        let first = trialAccount.replacingOccurrences(of: "WATCH=/Users/camille/.lab/state/account", with: "WATCH=\(file.path)")
+        try first.write(to: file, atomically: false, encoding: .utf8)
+        let lab = FakeLab { command in
+            switch command.arguments {
+            case ["app", "account"]: return ok((try? String(contentsOf: file, encoding: .utf8)) ?? "")
+            case ["app", "ginkgo"]: return ok(ginkgoSettings)
+            default: return ok("KEY=present\n")
+            }
+        }
+        let account = AccountModel(runner: lab, watcher: FSEventsFileWatcher(latency: 0.05))
+        account.start()
+        #expect(await eventually { await MainActor.run { account.snapshot?.plan == .trial } })
+        try await Task.sleep(for: .milliseconds(300))
+        // Another program rewrites it, as lab does: FSEvents ignores Treelab's own writes.
+        let temporary = folder.url.appendingPathComponent(".account.tmp")
+        try first.replacingOccurrences(of: "PLAN=trial", with: "PLAN=monthly").write(to: temporary, atomically: false, encoding: .utf8)
+        let move = Process()
+        move.executableURL = URL(fileURLWithPath: "/bin/mv")
+        move.arguments = ["-f", temporary.path, file.path]
+        try move.run()
+        move.waitUntilExit()
+        #expect(await eventually(5) { await MainActor.run { account.snapshot?.plan == .monthly } })
     }
 }
