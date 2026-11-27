@@ -5297,5 +5297,11 @@
     "identityLocales": {
       "fr": "Suggestions is the standard French noun for this label and shares the English spelling."
     }
+  },
+  "treelab.lanes.kind.question": {
+    "source": "QUESTION",
+    "identityLocales": {
+      "fr": "QUESTION is the standard French label for a question in Treelab's Feed and shares the English spelling."
+    }
   }
 }

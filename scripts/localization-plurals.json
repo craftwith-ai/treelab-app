@@ -787,5 +787,35 @@
     "arguments": [
       1
     ]
+  },
+  "treelab.lanes.count.working": {
+    "source": "%lld working",
+    "arguments": [
+      1
+    ]
+  },
+  "treelab.lanes.count.waiting": {
+    "source": "%lld waiting for you",
+    "arguments": [
+      1
+    ]
+  },
+  "treelab.lanes.count.stopped": {
+    "source": "%lld stopped",
+    "arguments": [
+      1
+    ]
+  },
+  "treelab.lanes.count.lanes": {
+    "source": "%lld lanes",
+    "arguments": [
+      1
+    ]
+  },
+  "treelab.lanes.count.projects": {
+    "source": "%lld projects",
+    "arguments": [
+      1
+    ]
   }
 }
