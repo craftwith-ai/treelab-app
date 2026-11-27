@@ -25,13 +25,32 @@ struct FeedQueueColumn: View {
                 }
             }
             Spacer(minLength: 0)
-            HStack(spacing: 6) {
-                KeyCap("↑↓"); Text(text.change).font(.system(size: 10)).foregroundStyle(palette.textSecondary)
-                KeyCap("1 2 3"); Text(text.answerKey).font(.system(size: 10)).foregroundStyle(palette.textSecondary)
-                KeyCap("↵"); Text(text.sendKey).font(.system(size: 10)).foregroundStyle(palette.textSecondary)
+            // One row when it fits, otherwise one key per row: a key cap never splits ("1" above "2 3").
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) { legendKeys }
+                VStack(alignment: .leading, spacing: 4) { legendKeys }
             }
         }
         .padding(14)
+    }
+
+    @ViewBuilder private var legendKeys: some View {
+        LegendKey(key: "↑↓", label: text.change)
+        LegendKey(key: "1 2 3", label: text.answerKey)
+        LegendKey(key: "↵", label: text.sendKey)
+    }
+}
+
+/// A key cap and what it does, kept together on one line.
+struct LegendKey: View {
+    let key: String
+    let label: String
+    var body: some View {
+        HStack(spacing: 6) {
+            KeyCap(key)
+            Text(label).font(.system(size: 10)).foregroundStyle(HUDPalette().textSecondary).lineLimit(1)
+        }
+        .fixedSize()
     }
 }
 

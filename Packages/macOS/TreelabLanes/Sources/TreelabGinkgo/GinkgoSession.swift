@@ -1,0 +1,127 @@
+public import Foundation
+
+/// What Treelab knows of Ginkgo on one connection, built from its events (levels excluded: they
+/// change 30 times a second and live in ``GinkgoLevels``).
+public struct GinkgoSession: Sendable, Equatable {
+    /// Lines kept on screen: the open conversation only, the latest ones.
+    public static let maxLines = 200
+    /// Actions kept on screen.
+    public static let maxDid = 50
+
+    public private(set) var version: String?
+    public private(set) var capabilities: [String] = []
+    public private(set) var state: GinkgoVoiceState = .closed
+    public private(set) var mic = false
+    public private(set) var focus: String?
+    public private(set) var listen: GinkgoListenMode?
+    public private(set) var lines: [GinkgoLine] = []
+    public private(set) var did: [GinkgoDid] = []
+    public private(set) var about: GinkgoAbout?
+    public private(set) var pendingClose: GinkgoPendingClose?
+    /// How the last close waiting for its "yes" ended, until the next one.
+    public private(set) var lastCloseOutcome: GinkgoCloseOutcome?
+    /// The last refusal or error, said in plain words by the screen.
+    public private(set) var problem: Problem?
+    /// The latest announcement Ginkgo made by itself.
+    public private(set) var news: News?
+    /// The key of the key mode is held.
+    public private(set) var keyDown = false
+    /// Ginkgo said it stops.
+    public private(set) var isGone = false
+    private var lastSeq: Int?
+
+    /// A refusal (`refused`) or an error (`error`).
+    public struct Problem: Sendable, Equatable {
+        public var isRefusal: Bool
+        public var code: String
+        public var text: String
+    }
+
+    /// An announcement.
+    public struct News: Sendable, Equatable {
+        public var project: String
+        public var lane: String
+        public var kind: String
+        public var text: String
+    }
+
+    public init() {}
+
+    /// Applies an event.
+    /// - Returns: `false` when it was ignored (a `seq` that does not grow, or a level).
+    @discardableResult
+    public mutating func apply(_ envelope: GinkgoEnvelope) -> Bool {
+        if let lastSeq, envelope.seq <= lastSeq { return false }
+        lastSeq = envelope.seq
+        switch envelope.event {
+        case let .hello(version, _, capabilities, listen):
+            self.version = version
+            self.capabilities = capabilities
+            if let listen { self.listen = listen }
+        case let .snapshot(snapshot):
+            state = snapshot.state
+            mic = snapshot.mic
+            focus = snapshot.focus
+            if let listen = snapshot.listen { self.listen = listen }
+            pendingClose = snapshot.confirm
+            about = snapshot.about
+            lines = Array(snapshot.lines.suffix(Self.maxLines))
+            did = Array(snapshot.did.suffix(Self.maxDid))
+            problem = nil
+        case let .state(newState, mic, focus):
+            if newState.isConversation, !state.isConversation { startConversation() }
+            state = newState
+            self.mic = mic
+            if let focus { self.focus = focus }
+            if newState.isConversation { problem = nil }
+        case .wake, .interrupt:
+            break
+        case let .key(down):
+            keyDown = down
+        case let .line(line):
+            if let index = lines.lastIndex(where: { $0.id == line.id }) {
+                lines[index] = line
+            } else {
+                lines.append(line)
+                if lines.count > Self.maxLines { lines.removeFirst(lines.count - Self.maxLines) }
+            }
+        case let .did(action):
+            did.append(action)
+            if did.count > Self.maxDid { did.removeFirst(did.count - Self.maxDid) }
+        case let .about(about):
+            self.about = about
+        case let .confirm(close):
+            pendingClose = close
+            lastCloseOutcome = nil
+        case let .confirmEnd(project, lane, outcome):
+            if pendingClose?.project == project, pendingClose?.lane == lane { pendingClose = nil }
+            lastCloseOutcome = outcome
+        case let .news(project, lane, kind, text):
+            news = News(project: project, lane: lane, kind: kind, text: text)
+        case let .mode(listen):
+            self.listen = listen
+        case let .refused(reason, text):
+            problem = Problem(isRefusal: true, code: reason, text: text)
+        case let .error(kind, text):
+            problem = Problem(isRefusal: false, code: kind, text: text)
+        case .level:
+            return false
+        case .ack:
+            break
+        case .bye:
+            isGone = true
+            state = .closed
+            mic = false
+            pendingClose = nil
+        }
+        return true
+    }
+
+    /// A new conversation shows only its own lines.
+    private mutating func startConversation() {
+        lines = []
+        did = []
+        about = nil
+        lastCloseOutcome = nil
+    }
+}

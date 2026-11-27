@@ -14,6 +14,7 @@ let package = Package(
     products: [
         .library(name: "TreelabLanes", targets: ["TreelabLanes"]),
         .library(name: "TreelabLanesUI", targets: ["TreelabLanesUI"]),
+        .library(name: "TreelabGinkgo", targets: ["TreelabGinkgo"]),
     ],
     targets: [
         .target(
@@ -24,9 +25,20 @@ let package = Package(
                 .enableUpcomingFeature("InternalImportsByDefault"),
             ]
         ),
+        // Ginkgo.app's direct channel (contract v1): a local socket of the same user, no network,
+        // no sound. Kept apart so the lanes brain keeps 0 socket.
+        .target(
+            name: "TreelabGinkgo",
+            dependencies: ["TreelabLanes"],
+            swiftSettings: [
+                .swiftLanguageMode(.v6),
+                .enableUpcomingFeature("ExistentialAny"),
+                .enableUpcomingFeature("InternalImportsByDefault"),
+            ]
+        ),
         .target(
             name: "TreelabLanesUI",
-            dependencies: ["TreelabLanes"],
+            dependencies: ["TreelabLanes", "TreelabGinkgo"],
             resources: [
                 .process("Resources"),
             ],
@@ -34,6 +46,14 @@ let package = Package(
                 .swiftLanguageMode(.v6),
                 .enableUpcomingFeature("ExistentialAny"),
                 .enableUpcomingFeature("InternalImportsByDefault"),
+            ]
+        ),
+        .testTarget(
+            name: "TreelabGinkgoTests",
+            dependencies: ["TreelabGinkgo", "TreelabLanes"],
+            swiftSettings: [
+                .swiftLanguageMode(.v6),
+                .enableUpcomingFeature("ExistentialAny"),
             ]
         ),
         .testTarget(
