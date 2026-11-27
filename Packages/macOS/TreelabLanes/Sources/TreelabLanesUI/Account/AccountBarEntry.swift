@@ -23,6 +23,11 @@ public struct AccountBarEntry: View {
         sidebarWidth - 2 * 8 - 2 * 12 - 20 - 10 - 10 - 13
     }
 
+    /// The second line as the entry shows it.
+    nonisolated static func shownLine(_ line: String) -> String {
+        line
+    }
+
     /// Creates the entry.
     /// - Parameter center: the account's windows and model.
     public init(center: TreelabAccountCenter) {
@@ -38,7 +43,7 @@ public struct AccountBarEntry: View {
                 TreelabMark(side: 20)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(text.accountBarTitle).font(.system(size: 12, weight: .semibold)).foregroundStyle(palette.text)
-                    Text(line)
+                    Text(Self.shownLine(line))
                         .font(.system(size: Self.subtitleFontSize))
                         .foregroundStyle(palette.textSecondary)
                         .lineLimit(Self.subtitleLineLimit)

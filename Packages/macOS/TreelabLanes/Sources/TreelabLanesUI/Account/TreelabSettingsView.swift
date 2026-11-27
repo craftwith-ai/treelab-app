@@ -510,7 +510,23 @@ private struct ListeningCard: View {
 }
 
 /// GINKGO · WHEN IT SPEAKS: always, in a conversation or never; quiet hours.
-private struct SpeechCard: View {
+struct SpeechCard: View {
+    /// Speech options on one row of the card.
+    nonisolated static let optionsPerRow = 3
+
+    /// Width left to an option's name in the Privacy section of a settings window `windowWidth`
+    /// points wide: the navigation and its divider, the page's paddings, the second of two columns,
+    /// the card's paddings, the spacings between the options, then the option's paddings, its
+    /// circle and the spacing after it (HUDChoiceRow).
+    nonisolated static func optionNameWidth(windowWidth: CGFloat) -> CGFloat {
+        let size = AccountScreenSize(width: windowWidth)
+        let section = windowWidth - size.navigation - 1 - 2 * size.padding
+        let column = section >= 720 ? (section - size.cardSpacing) / 2 : section
+        let card = column - 2 * (size.isLarge ? 20 : 16)
+        let option = (card - 8 * CGFloat(optionsPerRow - 1)) / CGFloat(optionsPerRow)
+        return option - 2 * 10 - 16 - 12
+    }
+
     let model: AccountModel
     @State private var quietOn = true
     @State private var from = SpeechCard.time("21:00")
@@ -523,7 +539,11 @@ private struct SpeechCard: View {
         let enabled = model.speaksContract && !model.isBusy
         HUDCard(title: text.privacyCardSpeak) {
             HUDNote(text: text.privacySpeakIntro, color: palette.text)
-            HStack(spacing: 8) {
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 8, alignment: .top), count: Self.optionsPerRow),
+                alignment: .leading,
+                spacing: 8
+            ) {
                 ForEach(GinkgoSpeech.allCases, id: \.self) { mode in
                     HUDChoiceRow(name: name(mode), isSelected: (model.ginkgo.speak ?? .always) == mode) {
                         Task { await model.setSpeech(mode) }
