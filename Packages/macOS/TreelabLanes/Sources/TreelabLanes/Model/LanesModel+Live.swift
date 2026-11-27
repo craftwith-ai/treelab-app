@@ -8,20 +8,12 @@ extension LanesModel {
     ///   - readerPID: Treelab's process id.
     /// - Returns: a model, not started.
     public static func live(home: URL, readerPID: Int32) -> LanesModel {
-        let locator = LabExecutableLocator(candidates: LabExecutableLocator.defaultCandidates(home: home))
-        var runner: (any LabCommandRunning)?
-        var unavailable: LanesProblem?
-        do {
-            runner = ProcessLabCommandRunner(executable: try locator.locate(), locator: locator)
-        } catch let problem as LanesProblem {
-            unavailable = problem
-        } catch {
-            unavailable = .labUnavailable(error.localizedDescription)
-        }
+        // lab is found again before each call: a missing lab is said by the first call, and an
+        // update that relinks its installation is followed.
+        let runner = ProcessLabCommandRunner(locator: LabExecutableLocator(candidates: LabExecutableLocator.defaultCandidates(home: home)))
         let service = LanesService(
             reader: SnapshotFolderReader(folder: home.appendingPathComponent(".lab/state/app-snapshot")),
             runner: runner,
-            unavailable: unavailable,
             readerPID: readerPID,
             files: FSEventsFileWatcher(),
             entries: KernelDirectoryWatcher(),

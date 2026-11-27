@@ -29,14 +29,7 @@ public struct SnapshotFileGate: Sendable {
     public func read(_ file: URL, within folder: URL) throws -> String {
         guard let filePath = Self.inside(file, folder) else { throw SnapshotFileRefusal.outsideFolder }
         try checkFolder(Self.lexical(folder.path))
-        let descriptor = open(filePath, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
-        guard descriptor >= 0 else {
-            switch errno {
-            case ELOOP: throw SnapshotFileRefusal.symbolicLink
-            case ENOENT, ENOTDIR: throw SnapshotFileRefusal.missing
-            default: throw SnapshotFileRefusal.unreadable
-            }
-        }
+        let descriptor = try Self.openInside(filePath, folder)
         defer { close(descriptor) }
         var info = stat()
         guard fstat(descriptor, &info) == 0 else { throw SnapshotFileRefusal.unreadable }
@@ -59,9 +52,10 @@ public struct SnapshotFileGate: Sendable {
     ///   - folder: the folder it must stay inside.
     /// - Returns: its modification date, or `nil` when it is refused or missing.
     public func modificationDate(of file: URL, within folder: URL) -> Date? {
-        guard let filePath = Self.inside(file, folder) else { return nil }
+        guard let filePath = Self.inside(file, folder), let descriptor = try? Self.openInside(filePath, folder) else { return nil }
+        defer { close(descriptor) }
         var info = stat()
-        guard lstat(filePath, &info) == 0, (info.st_mode & S_IFMT) == S_IFREG,
+        guard fstat(descriptor, &info) == 0, (info.st_mode & S_IFMT) == S_IFREG,
               info.st_uid == ownerID, (info.st_mode & (S_IWGRP | S_IWOTH)) == 0 else { return nil }
         return Date(timeIntervalSince1970: TimeInterval(info.st_mtimespec.tv_sec))
     }
@@ -69,6 +63,37 @@ public struct SnapshotFileGate: Sendable {
     /// The file's path when it stays inside `folder`, compared on text alone (`.` and `..`
     /// resolved without the disk: Foundation's standardizing drops `/private` only for paths
     /// that exist, which would make a missing file look outside its folder).
+    /// Opens the file without following a link at its end, then checks where it really is: a
+    /// folder on the way that is a link leading out of `folder` is refused (`outsideFolder`).
+    private static func openInside(_ filePath: String, _ folder: URL) throws -> Int32 {
+        let descriptor = open(filePath, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
+        guard descriptor >= 0 else {
+            switch errno {
+            case ELOOP: throw SnapshotFileRefusal.symbolicLink
+            case ENOENT, ENOTDIR: throw SnapshotFileRefusal.missing
+            default: throw SnapshotFileRefusal.unreadable
+            }
+        }
+        var opened = [CChar](repeating: 0, count: Int(MAXPATHLEN))
+        guard let realFolder = realpath(folder.path, nil) else {
+            close(descriptor)
+            throw SnapshotFileRefusal.missing
+        }
+        let folderPath = String(cString: realFolder)
+        free(realFolder)
+        guard fcntl(descriptor, F_GETPATH, &opened) == 0 else {
+            close(descriptor)
+            throw SnapshotFileRefusal.unreadable
+        }
+        let prefix = folderPath.hasSuffix("/") ? folderPath : folderPath + "/"
+        let openedPath = String(decoding: opened.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
+        guard openedPath.hasPrefix(prefix) else {
+            close(descriptor)
+            throw SnapshotFileRefusal.outsideFolder
+        }
+        return descriptor
+    }
+
     private static func inside(_ file: URL, _ folder: URL) -> String? {
         let folderPath = lexical(folder.path)
         let filePath = lexical(file.path)

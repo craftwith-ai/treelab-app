@@ -5,7 +5,6 @@ import TreelabLanes
 /// the numbered choices (keys 1 to 9), a free answer, "Open the lane", and the outcome.
 struct FeedRequestDetail: View {
     @Bindable var model: LanesModel
-    @State private var picks: [Int: Set<Int>] = [:]
     @FocusState private var answerFocused: Bool
     @FocusState private var detailFocused: Bool
     private let palette = HUDPalette()
@@ -38,10 +37,9 @@ struct FeedRequestDetail: View {
         .focusEffectDisabled()
         .focused($detailFocused)
         .onAppear { detailFocused = true }
-        .onChange(of: model.selectedRequestID) { picks = [:] }
         .onKeyPress(characters: .decimalDigits) { press in
             guard !answerFocused, let digit = Int(press.characters), digit > 0 else { return .ignored }
-            return choose(digit) ? .handled : .ignored
+            return model.pressDigit(digit) ? .handled : .ignored
         }
     }
 
@@ -77,14 +75,13 @@ struct FeedRequestDetail: View {
             switch model.question {
             case let .box(_, items) where model.questionLaneID == request.id:
                 VStack(alignment: .leading, spacing: 14) {
-                    ForEach(items) { item in questionItem(item, single: items.count == 1) }
+                    ForEach(items) { item in questionItem(item) }
                     if items.count > 1 || items.contains(where: \.multiple) {
                         HStack {
                             Text(text.chooseThenSend).font(.system(size: 11)).foregroundStyle(palette.textSecondary)
                             Spacer()
-                            actionButton(text.send, key: "↵", prominent: true, disabled: picks.values.allSatisfy(\.isEmpty) || isBusy(request)) {
-                                let choices = picks.mapValues { $0.sorted() }.filter { !$0.value.isEmpty }
-                                Task { await model.answer(choices: choices) }
+                            actionButton(text.send, key: "↵", prominent: true, disabled: model.picks.values.allSatisfy(\.isEmpty) || isBusy(request)) {
+                                Task { await model.submit() }
                             }
                         }
                     }
@@ -101,17 +98,13 @@ struct FeedRequestDetail: View {
         }
     }
 
-    private func questionItem(_ item: LabQuestion.Item, single: Bool) -> some View {
+    private func questionItem(_ item: LabQuestion.Item) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(verbatim: item.text).font(.system(size: 14, weight: .semibold)).fixedSize(horizontal: false, vertical: true)
             ForEach(item.options) { option in
-                let chosen = picks[item.number]?.contains(option.number) == true
+                let chosen = model.picks[item.number]?.contains(option.number) == true
                 Button {
-                    if single && !item.multiple {
-                        Task { await model.answer(choices: [item.number: [option.number]]) }
-                    } else {
-                        toggle(item, option.number)
-                    }
+                    model.pick(question: item.number, option: option.number)
                 } label: {
                     HStack(alignment: .top, spacing: 10) {
                         KeyCap("\(option.number)")
@@ -196,28 +189,6 @@ struct FeedRequestDetail: View {
 
     private func sendText() {
         Task { await model.submitDraft() }
-    }
-
-    private func toggle(_ item: LabQuestion.Item, _ option: Int) {
-        var set = picks[item.number] ?? []
-        if item.multiple {
-            if set.contains(option) { set.remove(option) } else { set.insert(option) }
-        } else {
-            set = [option]
-        }
-        picks[item.number] = set
-    }
-
-    /// Key 1 to 9 picks a choice of the first question (and sends it when the box has one question).
-    private func choose(_ digit: Int) -> Bool {
-        guard case let .box(_, items) = model.question, let first = items.first,
-              first.options.contains(where: { $0.number == digit }) else { return false }
-        if items.count == 1 && !first.multiple {
-            Task { await model.answer(choices: [first.number: [digit]]) }
-        } else {
-            toggle(first, digit)
-        }
-        return true
     }
 
     private func isBusy(_ request: ClassifiedLane) -> Bool { model.busyLaneIDs.contains(request.id) }

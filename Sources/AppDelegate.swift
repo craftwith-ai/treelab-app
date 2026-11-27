@@ -21055,6 +21055,8 @@ extension NSWindow {
 extension AppDelegate {
     /// Treelab: starts following lab's lanes and lets the Feed open a lane's workspace itself.
     func startTreelabLanes() {
+        // The test host never declares itself a reader nor runs the user's lab.
+        guard !isRunningUnderXCTestCached else { return }
         treelabLanes.setOpenInApp { [weak self] project, lane in
             guard let self else { return false }
             let worktree = (project.root as NSString).appendingPathComponent(".worktrees/\(lane.record.lane)")

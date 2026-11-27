@@ -28,8 +28,10 @@ public final class LanesModel {
     public private(set) var notice: LanesNotice?
     /// Lanes with an action under way.
     public private(set) var busyLaneIDs: Set<String> = []
-    /// The answer being typed in the Feed, sent by Return (``submitDraft()``).
-    public var draftAnswer = ""
+    /// Choices picked in a box that waits for Send (question number → option numbers).
+    public private(set) var picks: [Int: Set<Int>] = [:]
+    /// Answers being typed, per lane: moving to another request keeps them.
+    private var drafts: [String: String] = [:]
 
     private let service: LanesService
     private let runner: (any LabCommandRunning)?
@@ -104,8 +106,17 @@ public final class LanesModel {
         guard selectedRequestID != id else { return }
         selectedRequestID = id
         notice = nil
-        draftAnswer = ""
+        picks = [:]
         Task { await readQuestion() }
+    }
+
+    /// The answer being typed for the selected request, sent by Return (``submit()``).
+    public var draftAnswer: String {
+        get { selectedRequest.flatMap { drafts[$0.id] } ?? "" }
+        set {
+            guard let id = selectedRequest?.id else { return }
+            drafts[id] = newValue.isEmpty ? nil : newValue
+        }
     }
 
     /// Moves the selection by `offset` in the queue (arrow keys).
@@ -140,9 +151,13 @@ public final class LanesModel {
     /// - Parameter choices: chosen option numbers per question number.
     public func answer(choices: [Int: [Int]]) async {
         guard let lane = selectedRequest, questionLaneID == lane.id, case let .box(qid, _) = question,
-              let questionID = LabQuestionID(qid), let project = LabName(lane.record.project),
-              let laneName = LabName(lane.record.lane), !choices.isEmpty else { return }
+              let project = LabName(lane.record.project), let laneName = LabName(lane.record.lane), !choices.isEmpty else { return }
+        guard let questionID = LabQuestionID(qid) else {
+            notice = .refused("question id refused: \(qid)")
+            return
+        }
         await perform(.answerChoices(project: project, lane: laneName, qid: questionID, choices: choices), for: lane, success: .sent(lane.id))
+        await afterAnswer(lane)
     }
 
     /// Answers the selected lane with the user's text (`lab ginkgo answer --text`).
@@ -152,12 +167,63 @@ public final class LanesModel {
         guard !trimmed.isEmpty, let lane = selectedRequest,
               let project = LabName(lane.record.project), let laneName = LabName(lane.record.lane) else { return }
         await perform(.answerText(project: project, lane: laneName, text: trimmed), for: lane, success: .sent(lane.id))
+        await afterAnswer(lane)
+    }
+
+    /// Once lab took an answer: the lane's typed text and picks are cleared, and what it asks
+    /// now is read again (the agent may already wait on a new question).
+    private func afterAnswer(_ lane: ClassifiedLane) async {
+        guard notice == .sent(lane.id) else { return }
+        drafts[lane.id] = nil
+        picks = [:]
+        if selectedRequest?.id == lane.id { await readQuestion() }
+    }
+
+    /// Key 1 to 9: picks that option of the first question (``pick(question:option:)``).
+    /// - Parameter digit: the key pressed.
+    /// - Returns: `false` when the question has no such option: the key is left to others.
+    @discardableResult
+    public func pressDigit(_ digit: Int) -> Bool {
+        guard let lane = selectedRequest, questionLaneID == lane.id, case let .box(_, items) = question,
+              let first = items.first, first.options.contains(where: { $0.number == digit }) else { return false }
+        pick(question: first.number, option: digit)
+        return true
+    }
+
+    /// Picks an option. A box with one single-choice question sends it at once; otherwise the
+    /// pick waits for Send (``submit()``), and a multiple-choice question toggles it.
+    /// - Parameters:
+    ///   - number: the question's number.
+    ///   - option: the option's number.
+    public func pick(question number: Int, option: Int) {
+        guard case let .box(_, items) = question, let item = items.first(where: { $0.number == number }),
+              item.options.contains(where: { $0.number == option }) else { return }
+        if items.count == 1 && !item.multiple {
+            Task { await answer(choices: [number: [option]]) }
+            return
+        }
+        var set = picks[number] ?? []
+        if item.multiple {
+            if set.contains(option) { set.remove(option) } else { set.insert(option) }
+        } else {
+            set = [option]
+        }
+        picks[number] = set
+    }
+
+    /// Return in the Feed: the typed answer, or else the picked choices.
+    public func submit() async {
+        let chosen = picks.mapValues { $0.sorted() }.filter { !$0.value.isEmpty }
+        if draftAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !chosen.isEmpty {
+            await answer(choices: chosen)
+        } else {
+            await submitDraft()
+        }
     }
 
     /// Sends ``draftAnswer`` to the selected lane, then clears it once lab took it.
     public func submitDraft() async {
         await answer(text: draftAnswer)
-        if case .sent = notice { draftAnswer = "" }
     }
 
     /// Relaunches a stopped lane (`lab next`).
@@ -211,11 +277,16 @@ public final class LanesModel {
     }
 
     private func apply(_ newState: LanesState) {
+        let before = selectedRequest
         state = newState
-        if isFeedPresented, let selected = selectedRequestID, !requests.contains(where: { $0.id == selected }) {
+        guard isFeedPresented else { return }
+        if let selected = selectedRequestID, !requests.contains(where: { $0.id == selected }) {
             // The answered request left the queue: show the next one.
             selectedRequestID = requests.first?.id
-            draftAnswer = ""
+            picks = [:]
+            Task { await readQuestion() }
+        } else if let before, let now = selectedRequest, now.id == before.id, now.record != before.record {
+            // lab wrote the selected lane again: it may ask something new.
             Task { await readQuestion() }
         }
     }

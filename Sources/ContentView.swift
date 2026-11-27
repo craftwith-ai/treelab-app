@@ -139,6 +139,8 @@ private final class WindowCommandPaletteOverlayController: NSObject {
     private var focusLockTimer: DispatchSourceTimer?
     private let scheduledFocusAction = MainActorDeferredActionScheduler()
     private var isPaletteVisible = false
+    /// Treelab: `false` while the Feed is shown, whose keys 1–9 must reach the Feed itself.
+    private var locksTextInputFocus = true
     private var hasMountedPaletteRootView = false
 
     init(window: NSWindow) {
@@ -447,6 +449,10 @@ private final class WindowCommandPaletteOverlayController: NSObject {
             stopFocusLockTimer()
             return
         }
+        guard locksTextInputFocus else {
+            stopFocusLockTimer()
+            return
+        }
 
         guard window.isKeyWindow else {
 #if DEBUG
@@ -519,9 +525,11 @@ private final class WindowCommandPaletteOverlayController: NSObject {
 
     func update(
         isVisible: Bool,
+        locksTextInputFocus: Bool = true,
         onDismiss: @MainActor @escaping (CommandPaletteInteractionDismissal) -> Void = { _ in },
         makeRootView: @MainActor () -> AnyView = { AnyView(EmptyView()) }
     ) {
+        self.locksTextInputFocus = locksTextInputFocus
         let wasVisible = isPaletteVisible
         if !isVisible {
             guard wasVisible || hasMountedPaletteRootView || !containerView.isHidden else { return }
@@ -3228,7 +3236,7 @@ struct ContentView: View {
             if isAgentInboxPresented {
                 agentInboxSubmitRequest &+= 1
             } else if isTreelabFeedPresented {
-                Task { await treelabLanes?.submitDraft() }
+                Task { await treelabLanes?.submit() }
             } else {
                 handleCommandPaletteSubmitRequest()
             }
@@ -3366,6 +3374,7 @@ struct ContentView: View {
             let overlayController = commandPaletteWindowOverlayController(for: window)
             overlayController.update(
                 isVisible: isCommandPalettePresented,
+                locksTextInputFocus: !isTreelabFeedPresented,
                 onDismiss: { dismissal in
                     if isAgentInboxPresented {
                         dismissAgentInbox()
@@ -3646,6 +3655,7 @@ struct ContentView: View {
             commandPaletteWindowOverlayController(for: window)
                 .update(
                     isVisible: isCommandPalettePresented,
+                    locksTextInputFocus: !isTreelabFeedPresented,
                     onDismiss: { dismissal in
                         if isAgentInboxPresented {
                             dismissAgentInbox()
@@ -4020,6 +4030,7 @@ struct ContentView: View {
         Group {
             if isTreelabFeedPresented, let treelabLanes {
                 TreelabFeedView(model: treelabLanes, onClose: dismissTreelabFeed)
+                    .background(CommandPalettePanelHitRegion())
                     .zIndex(2000)
             } else {
                 commandPaletteDialogOverlay

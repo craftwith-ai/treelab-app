@@ -100,12 +100,17 @@ public struct LaneRecord: Sendable, Equatable, Identifiable {
             batch: block.first("BATCH") ?? "",
             batchState: block.first("BATCH_STATE") ?? "",
             forYou: block.first("FOR_YOU") == "yes",
-            wakeAt: block.first("WAKE_AT").flatMap(TimeInterval.init).map(Date.init(timeIntervalSince1970:)),
+            wakeAt: block.first("WAKE_AT").flatMap(TimeInterval.init).flatMap(Self.wakeDate),
             watchPaths: block.all("WATCH"),
             watchEntries: block.all("WATCH_ENTRIES"),
             writtenPaths: block.all("WRITTEN"),
             watchPIDs: block.all("WATCH_PID").compactMap(Int32.init)
         )
+    }
+
+    /// A `WAKE_AT` epoch that is a real date: finite, after 1970 and before the year 3000.
+    static func wakeDate(_ epoch: TimeInterval) -> Date? {
+        epoch.isFinite && epoch > 0 && epoch < 32_503_680_000 ? Date(timeIntervalSince1970: epoch) : nil
     }
 
     /// The lane's `.lab/meta` among its watched files, if lab lists it.

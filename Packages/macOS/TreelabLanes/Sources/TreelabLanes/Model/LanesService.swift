@@ -32,6 +32,10 @@ public actor LanesService {
     private var processTask: Task<Void, Never>?
     private var wakeTask: Task<Void, Never>?
     private var inFlight: Set<LaneTarget> = []
+    /// Targets asked again while they ran: each runs once more when its call ends.
+    private var askedAgain: Set<LaneTarget> = []
+    /// The last targeted refresh lab refused, shown until one succeeds.
+    private var refreshProblem: LanesProblem?
     private var snapshotFolders: [String] = []
 
     /// Creates the service.
@@ -81,6 +85,8 @@ public actor LanesService {
     public func start() async {
         guard !started else { return }
         started = true
+        // The files lab already wrote are shown at once; the full snapshot may take a while.
+        reload()
         if let runner {
             do {
                 let output = try await runner.run(.snapshot(readerPID: readerPID, project: nil, lane: nil))
@@ -111,30 +117,66 @@ public actor LanesService {
             let result = try reader.read()
             state = LanesState(
                 snapshot: builder.snapshot(projects: result.projects, lanes: result.lanes, labVersion: result.labVersion),
-                problem: registration,
+                problem: shownProblem(refused: result.refused),
                 refusedFiles: result.refused,
                 loaded: true
             )
             updateWatches(LaneWatchPlan(projects: result.projects, lanes: result.lanes, now: now()))
-            watchSnapshotFolders(result.projects.map(\.project))
         } catch let problem as LanesProblem {
             state = LanesState(snapshot: .empty, problem: problem, refusedFiles: [:], loaded: true)
             updateWatches(nil)
-            watchSnapshotFolders([])
         } catch {
             state = LanesState(snapshot: .empty, problem: .labUnavailable(error.localizedDescription), loaded: true)
             updateWatches(nil)
-            watchSnapshotFolders([])
         }
+        if watchSnapshotFolders() {
+            // A folder appeared (a project's lanes): read once more in case lab wrote in it
+            // before it was watched.
+            Task { self.reload() }
+        }
+        publish()
+    }
+
+    /// The problem the counter shows: lab's answer to the reader declaration first, then a
+    /// refused refresh, then a refused file (its lane is missing from the figures).
+    private func shownProblem(refused: [String: SnapshotFileRefusal]) -> LanesProblem? {
+        if let problem = registration ?? refreshProblem { return problem }
+        guard let first = refused.keys.sorted().first, let reason = refused[first] else { return nil }
+        return .refusedFile(path: first, reason: reason)
+    }
+
+    private func publish() {
         for observer in observers.values { observer.yield(state) }
     }
 
-    /// Asks lab to rewrite `target`'s snapshot file, once at a time per target.
+    /// Asks lab to rewrite `target`'s snapshot file, once at a time per target: asked again while
+    /// it runs, it runs once more afterwards. A refusal is shown until a refresh succeeds.
     /// - Parameter target: the project or lane.
     public func refresh(_ target: LaneTarget) async {
-        guard let runner, let command = target.command(readerPID: readerPID), !inFlight.contains(target) else { return }
+        guard let runner, let command = target.command(readerPID: readerPID) else { return }
+        guard !inFlight.contains(target) else {
+            askedAgain.insert(target)
+            return
+        }
         inFlight.insert(target)
-        _ = try? await runner.run(command)
+        repeat {
+            askedAgain.remove(target)
+            do {
+                let output = try await runner.run(command)
+                refreshProblem = output.status == 0 ? nil : .labRefused(output.refusal)
+            } catch let problem as LanesProblem {
+                refreshProblem = problem
+            } catch {
+                refreshProblem = .labUnavailable(error.localizedDescription)
+            }
+            if state.loaded {
+                let problem = shownProblem(refused: state.refusedFiles)
+                if problem != state.problem {
+                    state.problem = problem
+                    publish()
+                }
+            }
+        } while askedAgain.contains(target)
         inFlight.remove(target)
     }
 
@@ -181,7 +223,8 @@ public actor LanesService {
             wakeTask?.cancel()
             wakeTask = nil
             if let wake = newPlan?.nextWake {
-                let delay = max(0, wake.date.timeIntervalSince(now()))
+                // At most 400 days ahead: a far date waits, and never overflows the conversion.
+                let delay = min(max(0, wake.date.timeIntervalSince(now())), 400 * 86_400)
                 // A genuine deadline (the lane's own WAKE_AT), one-shot and cancelled on change.
                 wakeTask = Task { [weak self] in
                     try? await Task.sleep(for: .milliseconds(Int(delay * 1000) + 50))
@@ -193,21 +236,30 @@ public actor LanesService {
     }
 
     /// lab replaces each snapshot file by an atomic rename (`mv -f`), so watching the folders'
-    /// entries (kqueue, no depth) sees every rewrite: the root, `projects/`, and each project's
-    /// folder and `lanes/` folder.
-    private func watchSnapshotFolders(_ projects: [String]) {
+    /// entries (kqueue, no depth) sees every rewrite. Watched: the folders that exist now (the
+    /// root, `projects/`, each project folder and its `lanes/`), listed from the disk rather than
+    /// from the projects read, so a folder lab creates later is watched as soon as its parent
+    /// reports it.
+    /// - Returns: `true` when the watched folders changed.
+    private func watchSnapshotFolders() -> Bool {
         let root = reader.folder.path
         var folders = [root, root + "/projects"]
-        for project in projects {
-            folders += [root + "/projects/" + project, root + "/projects/" + project + "/lanes"]
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: root + "/projects")) ?? []
+        for name in names.sorted() where LabName(name) != nil {
+            folders += [root + "/projects/" + name, root + "/projects/" + name + "/lanes"]
         }
-        guard folders != snapshotFolders else { return }
-        snapshotFolders = folders
+        let existing = folders.filter { path in
+            var info = stat()
+            return lstat(path, &info) == 0 && (info.st_mode & S_IFMT) == S_IFDIR
+        }
+        guard existing != snapshotFolders else { return false }
+        snapshotFolders = existing
         folderTask?.cancel()
-        let stream = entries.changes(under: folders)
+        let stream = entries.changes(under: existing)
         folderTask = Task { [weak self] in
             for await _ in stream { await self?.reload() }
         }
+        return true
     }
 
     private func documentsChanged(_ paths: [String]) async {
