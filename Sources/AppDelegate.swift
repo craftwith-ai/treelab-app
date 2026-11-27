@@ -39,6 +39,7 @@ import Combine
 import ObjectiveC.runtime
 import Darwin
 import CmuxFoundation
+import TreelabGinkgo
 import TreelabLanes
 #if canImport(CmuxSentryReporting)
 import CmuxSentryReporting
@@ -571,6 +572,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     lazy var treelabLanes: LanesModel = UserDefaults.standard.string(forKey: "TreelabLanesDemo")
         .map { LanesModel.demo(folder: URL(fileURLWithPath: $0), readerPID: getpid()) }
         ?? LanesModel.live(home: FileManager.default.homeDirectoryForCurrentUser, readerPID: getpid())
+    /// Treelab: Ginkgo.app's voice, followed on its local socket and only ever started by lab.
+    /// `-TreelabGinkgoDemo <folder>` follows the stand-in Ginkgo of that folder and runs no program.
+    lazy var treelabGinkgo: GinkgoModel = {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+        let focus: @MainActor () -> LabName? = { [weak self] in self?.treelabGinkgoFocus() }
+        // `-TreelabGinkgoDemoReduceMotion YES` shows the still heart without touching the Mac's setting.
+        let demoReduceMotion = UserDefaults.standard.bool(forKey: "TreelabGinkgoDemoReduceMotion")
+        return UserDefaults.standard.string(forKey: "TreelabGinkgoDemo")
+            .map { GinkgoModel.demo(folder: URL(fileURLWithPath: $0), clientVersion: version, focus: focus, reduceMotion: demoReduceMotion) }
+            ?? GinkgoModel.live(home: FileManager.default.homeDirectoryForCurrentUser, clientVersion: version, focus: focus)
+    }()
     let cloudBannerDismissalStore: CloudBannerDismissalStore
     /// Composition-root owner for the persisted per-SSH-machine clipboard-write policy.
     let sshClipboardWriteTrustStore: SSHClipboardWriteTrustStore
@@ -21086,5 +21098,20 @@ extension AppDelegate {
             return false
         }
         treelabLanes.start()
+        // Ginkgo's request is the one the Feed shows next.
+        treelabGinkgo.onAbout = { [weak self] about in
+            self?.treelabLanes.select("\(about.project.value)/\(about.lane.value)")
+        }
+        treelabGinkgo.start()
+    }
+
+    /// The project Ginkgo starts on: the lane shown in the key window, else the request chosen in
+    /// the Feed, else lab's first project.
+    func treelabGinkgoFocus() -> LabName? {
+        let lanes = treelabLanes
+        let shown = tabManager?.selectedWorkspace.flatMap { lanes.location(forDirectory: $0.currentDirectory) }?.project.id
+        let chosen = lanes.selectedRequest?.record.project
+        let first = lanes.state.snapshot.projects.first?.id
+        return (shown ?? chosen ?? first).flatMap(LabName.init)
     }
 }
