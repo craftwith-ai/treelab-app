@@ -5303,5 +5303,11 @@
     "identityLocales": {
       "fr": "QUESTION is the standard French label for a question in Treelab's Feed and shares the English spelling."
     }
+  },
+  "treelab.ginkgo.conversation": {
+    "source": "CONVERSATION",
+    "identityLocales": {
+      "fr": "CONVERSATION is the French title of Ginkgo's conversation card in the accepted mock-up and shares the English spelling."
+    }
   }
 }

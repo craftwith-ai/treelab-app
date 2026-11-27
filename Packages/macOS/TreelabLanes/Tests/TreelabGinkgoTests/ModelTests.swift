@@ -205,6 +205,38 @@ struct ModelTests {
         #expect(defaults.bool(forKey: GinkgoModel.keepActiveKey) == false)
     }
 
+    @Test("Escape on the screen: closes the microphone first, then a second Escape goes back to the lanes")
+    func escapeOnScreen() async throws {
+        let fake = try FakeGinkgo()
+        let ginkgo = model(fake, lab: nil)
+        ginkgo.setKeepActive(true)
+        ginkgo.start()
+        fake.greet(state: "listening", mic: true)
+        #expect(await eventually { ginkgo.isConversationOpen })
+        ginkgo.isScreenPresented = true
+        ginkgo.escape()
+        #expect(await eventually { fake.ops.last == "close" })
+        #expect(ginkgo.isScreenPresented)
+        fake.event("state", "\"state\":\"closed\",\"mic\":false")
+        #expect(await eventually { !ginkgo.isConversationOpen })
+        ginkgo.escape()
+        #expect(!ginkgo.isScreenPresented)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(fake.ops == ["hello", "close"])
+    }
+
+    @Test("Escape with Ginkgo absent: the screen closes, nothing is sent nor launched")
+    func escapeAbsent() async throws {
+        let fake = try FakeGinkgo()
+        let lab = RecordingLab.current()
+        let (ginkgo, _) = absentModel(fake, lab: lab)
+        ginkgo.start()
+        ginkgo.isScreenPresented = true
+        ginkgo.escape()
+        #expect(!ginkgo.isScreenPresented)
+        #expect(await lab.commands.isEmpty)
+    }
+
     @Test("a conversation ended by voice stops Ginkgo when not kept active, once")
     func endByVoice() async throws {
         let fake = try FakeGinkgo()

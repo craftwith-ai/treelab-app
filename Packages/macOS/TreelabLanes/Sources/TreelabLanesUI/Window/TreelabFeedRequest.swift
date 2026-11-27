@@ -5,6 +5,8 @@ import SwiftUI
 extension Notification.Name {
     /// Asks the window given as `object` to show the Feed (posted by the counter and the banner).
     public static let treelabFeedRequested = Notification.Name("sh.treelab.lanes.feedRequested")
+    /// Asks the window given as `object` to show Ginkgo's voice screen (posted by the bar entry).
+    public static let treelabGinkgoRequested = Notification.Name("sh.treelab.ginkgo.screenRequested")
 }
 
 /// The window a SwiftUI view is in, so its action targets that window even while the app is in
@@ -16,6 +18,11 @@ final class HostWindow {
     /// Asks this window to show the Feed.
     func requestFeed() {
         NotificationCenter.default.post(name: .treelabFeedRequested, object: window)
+    }
+
+    /// Asks this window to show Ginkgo's voice screen.
+    func requestGinkgo() {
+        NotificationCenter.default.post(name: .treelabGinkgoRequested, object: window)
     }
 }
 

@@ -25,6 +25,7 @@ import CmuxSwiftRender
 import CmuxSwiftRenderUI
 import CmuxUpdater
 import CmuxUpdaterUI
+import TreelabGinkgo
 import TreelabLanes
 import TreelabLanesUI
 import ImageIO
@@ -1068,6 +1069,15 @@ struct ContentView: View {
 
     private var isTreelabFeedPresented: Bool {
         commandPaletteOverlayState == .treelabFeed
+    }
+
+    private var isTreelabGinkgoPresented: Bool {
+        commandPaletteOverlayState == .treelabGinkgo
+    }
+
+    /// Ginkgo's voice, owned by the composition root.
+    private var treelabGinkgo: GinkgoModel? {
+        AppDelegate.shared?.treelabGinkgo
     }
 
     /// Treelab's lanes, owned by the composition root.
@@ -3208,6 +3218,20 @@ struct ContentView: View {
             if !presented, isTreelabFeedPresented { commandPaletteOverlayState = .closed }
         })
 
+        view = AnyView(view.onReceive(NotificationCenter.default.publisher(for: .treelabGinkgoRequested)) { notification in
+            guard Self.shouldHandleCommandPaletteRequest(
+                observedWindow: observedWindow,
+                requestedWindow: notification.object as? NSWindow,
+                keyWindow: NSApp.keyWindow,
+                mainWindow: NSApp.mainWindow
+            ) else { return }
+            openTreelabGinkgo()
+        })
+
+        view = AnyView(view.onChange(of: treelabGinkgo?.isScreenPresented ?? false) { _, presented in
+            if !presented, isTreelabGinkgoPresented { commandPaletteOverlayState = .closed }
+        })
+
         view = AnyView(view.onReceive(NotificationCenter.default.publisher(for: .savedLayoutSaveRequested)) { notification in
             if Self.shouldHandleSavedLayoutSaveRequest(observedWindow: observedWindow, requestedWindow: notification.object as? NSWindow, keyWindow: NSApp.keyWindow, mainWindow: NSApp.mainWindow) {
                 presentSavedLayoutSavePrompt()
@@ -3242,6 +3266,8 @@ struct ContentView: View {
                 agentInboxSubmitRequest &+= 1
             } else if isTreelabFeedPresented {
                 Task { await treelabLanes?.submit() }
+            } else if isTreelabGinkgoPresented {
+                return
             } else {
                 handleCommandPaletteSubmitRequest()
             }
@@ -3260,6 +3286,8 @@ struct ContentView: View {
                 dismissAgentInbox()
             } else if isTreelabFeedPresented {
                 dismissTreelabFeed()
+            } else if isTreelabGinkgoPresented {
+                treelabGinkgo?.escape()
             } else {
                 dismissCommandPalette()
             }
@@ -3332,6 +3360,8 @@ struct ContentView: View {
                 agentInboxMoveRequest &+= delta
             } else if isTreelabFeedPresented {
                 treelabLanes?.moveSelection(delta)
+            } else if isTreelabGinkgoPresented {
+                return
             } else {
                 guard case .commands = commandPaletteMode else { return }
                 moveCommandPaletteSelection(by: delta)
@@ -3379,12 +3409,14 @@ struct ContentView: View {
             let overlayController = commandPaletteWindowOverlayController(for: window)
             overlayController.update(
                 isVisible: isCommandPalettePresented,
-                locksTextInputFocus: !isTreelabFeedPresented,
+                locksTextInputFocus: !isTreelabFeedPresented && !isTreelabGinkgoPresented,
                 onDismiss: { dismissal in
                     if isAgentInboxPresented {
                         dismissAgentInbox()
                     } else if isTreelabFeedPresented {
                         dismissTreelabFeed()
+                    } else if isTreelabGinkgoPresented {
+                        treelabGinkgo?.dismissScreen()
                     } else {
                         dismissCommandPalette(for: dismissal, in: window)
                     }
@@ -3660,12 +3692,14 @@ struct ContentView: View {
             commandPaletteWindowOverlayController(for: window)
                 .update(
                     isVisible: isCommandPalettePresented,
-                    locksTextInputFocus: !isTreelabFeedPresented,
+                    locksTextInputFocus: !isTreelabFeedPresented && !isTreelabGinkgoPresented,
                     onDismiss: { dismissal in
                         if isAgentInboxPresented {
                             dismissAgentInbox()
                         } else if isTreelabFeedPresented {
                             dismissTreelabFeed()
+                        } else if isTreelabGinkgoPresented {
+                            treelabGinkgo?.dismissScreen()
                         } else {
                             dismissCommandPalette(for: dismissal, in: window)
                         }
@@ -4035,6 +4069,10 @@ struct ContentView: View {
         Group {
             if isTreelabFeedPresented, let treelabLanes {
                 TreelabFeedView(model: treelabLanes, onClose: dismissTreelabFeed)
+                    .background(CommandPalettePanelHitRegion())
+                    .zIndex(2000)
+            } else if isTreelabGinkgoPresented, let treelabGinkgo {
+                GinkgoVoiceScreen(model: treelabGinkgo, onShowRequest: showTreelabGinkgoRequest)
                     .background(CommandPalettePanelHitRegion())
                     .zIndex(2000)
             } else {
@@ -10371,6 +10409,21 @@ struct ContentView: View {
         treelabLanes?.closeFeed()
     }
 
+    /// Treelab: shows Ginkgo's voice screen over this window and opens the conversation.
+    private func openTreelabGinkgo() {
+        guard let treelabGinkgo else { return }
+        treelabGinkgo.openFromBar()
+        commandPaletteOverlayState = .treelabGinkgo
+    }
+
+    /// "See in the Feed" on the lane Ginkgo talks about: the Feed opens on its request; the
+    /// conversation goes on.
+    private func showTreelabGinkgoRequest(_ about: GinkgoAbout) {
+        treelabLanes?.select("\(about.project.value)/\(about.lane.value)")
+        treelabGinkgo?.dismissScreen()
+        openTreelabFeed()
+    }
+
     private func openCommandPaletteSwitcher() {
         invalidateCommandPaletteCloudWorkspaceTargets()
         handleCommandPaletteListRequest(scope: .switcher)
@@ -12141,6 +12194,13 @@ struct VerticalTabsSidebar: View, Equatable {
             if let lanes = AppDelegate.shared?.treelabLanes {
                 LaneCounterCard(model: lanes)
                     .padding(.top, MinimalModeChromeMetrics.titlebarHeight + 2)
+            }
+        }
+        .overlay(alignment: .bottom) {
+            // Treelab: Ginkgo, above the footer; it opens the voice screen in this window.
+            if isPresented, let appDelegate = AppDelegate.shared {
+                GinkgoBarEntry(model: appDelegate.treelabGinkgo, lanes: appDelegate.treelabLanes)
+                    .padding(.bottom, 34)
             }
         }
         .accessibilityIdentifier("Sidebar")
