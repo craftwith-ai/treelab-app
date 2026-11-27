@@ -180,7 +180,7 @@ struct GinkgoStateColumn: View {
                 Text(words.detail).font(.system(size: 13)).foregroundStyle(palette.textSecondary)
             }
             .multilineTextAlignment(.center)
-            GinkgoVoiceLine(levels: model.levels)
+            GinkgoVoiceLine(levels: model.levels, flowing: model.isSubscribedToLevels)
                 .frame(width: 48 * 6, height: 36)
                 .accessibilityHidden(true)
             Spacer(minLength: 8)

@@ -253,6 +253,8 @@ final class GinkgoHeartView: NSView {
 /// when a level arrives.
 struct GinkgoVoiceLine: NSViewRepresentable {
     let levels: GinkgoLevels
+    /// Levels arrive (subscribed); when they stop, the line goes back to rest at once.
+    let flowing: Bool
 
     func makeNSView(context: Context) -> GinkgoVoiceLineView {
         let view = GinkgoVoiceLineView()
@@ -260,7 +262,9 @@ struct GinkgoVoiceLine: NSViewRepresentable {
         return view
     }
 
-    func updateNSView(_ view: GinkgoVoiceLineView, context: Context) {}
+    func updateNSView(_ view: GinkgoVoiceLineView, context: Context) {
+        if !flowing { view.rest() }
+    }
 
     static func dismantleNSView(_ view: GinkgoVoiceLineView, coordinator: GinkgoHeart.Coordinator) {
         if let token = coordinator.token { coordinator.levels.stopObserving(token) }
@@ -297,7 +301,14 @@ final class GinkgoVoiceLineView: NSView {
     }
 
     /// The levels stopped (microphone closed, screen hidden): back to the thin line at rest.
-    func rest() {}
+    func rest() {
+        guard history.contains(where: { $0 != 0 }) else { return }
+        history = [CGFloat](repeating: 0, count: history.count)
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(0.07)
+        draw()
+        CATransaction.commit()
+    }
 
     func push(_ level: Double) {
         history.removeFirst()
