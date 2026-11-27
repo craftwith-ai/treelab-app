@@ -296,6 +296,9 @@ final class GinkgoVoiceLineView: NSView {
         CATransaction.commit()
     }
 
+    /// The levels stopped (microphone closed, screen hidden): back to the thin line at rest.
+    func rest() {}
+
     func push(_ level: Double) {
         history.removeFirst()
         history.append(CGFloat(level))
