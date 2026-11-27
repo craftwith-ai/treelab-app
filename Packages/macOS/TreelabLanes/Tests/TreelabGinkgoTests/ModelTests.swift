@@ -423,4 +423,135 @@ struct ModelTests {
         #expect(ginkgo.presence == .refused(.openToOthers(fake.path)))
         #expect(fake.connectionCount == 0)
     }
+
+    // MARK: Review of 2389dca2f (R4 to R12)
+
+    @Test("keep active on, no project yet: the background start goes as soon as lab's projects arrive, with no view (R4)")
+    func keepActiveFollowsProjects() async throws {
+        let fake = try FakeGinkgo()
+        let lab = RecordingLab.current()
+        defaults.set(true, forKey: GinkgoModel.keepActiveKey)
+        let projects = ObservedProjects()
+        let ginkgo = GinkgoModel(runner: lab, location: GinkgoSocketLocation(path: fake.folder + "/later.sock"), signals: signals,
+                                 defaults: defaults, clientVersion: "1.0", focus: { projects.first.flatMap(LabName.init) }, reduceMotion: { false })
+        ginkgo.start()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(await lab.commands.isEmpty)
+        projects.first = "carnet"
+        #expect(await eventually { await lab.commands.last == .ginkgoLaunch(project: name("carnet"), background: true) })
+    }
+
+    @Test("a hello that says another protocol: update needed, disconnected (§7, R5)")
+    func helloOtherProtocol() async throws {
+        let fake = try FakeGinkgo()
+        let ginkgo = model(fake, lab: nil)
+        ginkgo.start()
+        fake.event("hello", "\"ginkgo\":\"3.0.0\",\"protocol\":2,\"capabilities\":[],\"listen\":\"command\"")
+        #expect(await eventually { ginkgo.presence == .updateNeeded })
+        #expect(await eventually { !fake.hasClient })
+    }
+
+    @Test("the microphone said the same way by the bar and the screen: conversation, its name only, closed (R6)")
+    func microphone() async throws {
+        let fake = try FakeGinkgo()
+        let ginkgo = model(fake, lab: nil)
+        ginkgo.setKeepActive(true)
+        ginkgo.start()
+        fake.greet(state: "listening", mic: true)
+        #expect(await eventually { ginkgo.microphone == .conversation })
+        fake.event("state", "\"state\":\"name_listening\",\"mic\":true")
+        #expect(await eventually { ginkgo.session.state == .nameListening })
+        #expect(ginkgo.isMicrophoneOpen)
+        #expect(ginkgo.microphone == .name)
+        fake.event("state", "\"state\":\"closed\",\"mic\":false")
+        #expect(await eventually { ginkgo.microphone == .off })
+    }
+
+    @Test("a click while Ginkgo starts in the background opens the conversation once connected (R7)")
+    func clickDuringBackgroundStart() async throws {
+        let fake = try FakeGinkgo()
+        let lab = RecordingLab.current()
+        defaults.set(true, forKey: GinkgoModel.keepActiveKey)
+        let (ginkgo, path) = absentModel(fake, lab: lab)
+        ginkgo.start()
+        #expect(await eventually {
+            let count = await lab.commands.count
+            return ginkgo.presence == .starting && count == 2
+        })
+        ginkgo.openFromBar()
+        rename(fake.path, path)
+        signals.fireReady()
+        #expect(await eventually { ginkgo.presence == .connected && fake.hasClient })
+        fake.greet()
+        #expect(await eventually { fake.ops == ["hello", "open"] })
+        #expect(await lab.commands.count == 2, "lab is not called again")
+    }
+
+    @Test("a click on a fresh connection waits for the snapshot: a conversation already open is left as it is (R8)")
+    func clickWaitsForSnapshot() async throws {
+        let fake = try FakeGinkgo()
+        let ginkgo = model(fake, lab: nil)
+        ginkgo.talk()
+        #expect(await eventually { fake.hasClient })
+        fake.greet(state: "listening", mic: true)
+        #expect(await eventually { ginkgo.isConversationOpen })
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(fake.ops == ["hello"])
+    }
+
+    @Test("a click on a fresh connection with no conversation: open once the snapshot says so (R8)")
+    func clickOpensAfterSnapshot() async throws {
+        let fake = try FakeGinkgo()
+        let ginkgo = model(fake, lab: nil)
+        ginkgo.talk()
+        #expect(await eventually { fake.hasClient })
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(fake.ops == ["hello"], "nothing before the snapshot")
+        fake.greet()
+        #expect(await eventually { fake.ops == ["hello", "open"] })
+    }
+
+    @Test("a level whose seq does not grow is ignored, like any event (§3, R9)")
+    func levelSeq() async throws {
+        let fake = try FakeGinkgo()
+        let ginkgo = model(fake, lab: nil)
+        ginkgo.setKeepActive(true)
+        ginkgo.start()
+        fake.greet(state: "listening", mic: true)
+        #expect(await eventually { ginkgo.isConversationOpen })
+        ginkgo.setScreenVisible(true)
+        #expect(await eventually { fake.ops == ["hello", "subscribe"] })
+        fake.raw(Data("{\"v\":1,\"ev\":\"level\",\"seq\":2,\"at\":1795765000000,\"in\":0.7,\"out\":0.2}\n".utf8))
+        fake.event("level", "\"in\":0.4,\"out\":0.1")
+        #expect(await eventually { ginkgo.levels.received >= 1 })
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(ginkgo.levels.received == 1)
+        #expect(ginkgo.levels.input == 0.4)
+    }
+
+    @Test("a refused order is no longer said once Ginkgo is gone: its absence is (R10)")
+    func noticeClearedWhenGone() async throws {
+        let fake = try FakeGinkgo()
+        let ginkgo = model(fake, lab: nil)
+        ginkgo.start()
+        fake.greet()
+        fake.event("ack", "\"id\":1,\"ok\":false,\"text\":\"Rien à annuler\"")
+        #expect(await eventually { ginkgo.notice == .orderRefused("Rien à annuler") })
+        fake.event("bye")
+        #expect(await eventually { ginkgo.presence == .absent })
+        #expect(ginkgo.notice == nil)
+    }
+
+    @Test("Escape on the screen, not kept active: quit, the screen stays (R12)")
+    func escapeQuits() async throws {
+        let fake = try FakeGinkgo()
+        let ginkgo = model(fake, lab: nil)
+        ginkgo.start()
+        fake.greet(state: "listening", mic: true)
+        #expect(await eventually { ginkgo.isConversationOpen })
+        ginkgo.isScreenPresented = true
+        ginkgo.escape()
+        #expect(await eventually { fake.ops.last == "quit" })
+        #expect(ginkgo.isScreenPresented)
+    }
 }

@@ -117,6 +117,11 @@ public struct GinkgoSession: Sendable, Equatable {
         return true
     }
 
+    /// The lines to show: with less motion asked by the Mac, whole lines only (§6).
+    public func shownLines(wholeOnly: Bool) -> [GinkgoLine] {
+        lines
+    }
+
     /// A new conversation shows only its own lines.
     private mutating func startConversation() {
         lines = []

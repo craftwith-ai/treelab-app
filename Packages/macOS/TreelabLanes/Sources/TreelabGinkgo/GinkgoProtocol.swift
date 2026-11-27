@@ -143,7 +143,7 @@ public enum GinkgoEvent: Sendable, Equatable {
     /// `nil`: Ginkgo talks about no lane any more.
     case about(GinkgoAbout?)
     case confirm(GinkgoPendingClose)
-    case confirmEnd(project: String, lane: String, outcome: GinkgoCloseOutcome)
+    case confirmEnd(project: String?, lane: String?, outcome: GinkgoCloseOutcome)
     case news(project: String, lane: String, kind: String, text: String)
     case mode(GinkgoListenMode)
     case refused(reason: String, text: String)

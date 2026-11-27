@@ -25,6 +25,16 @@ public enum GinkgoPresence: Sendable, Equatable {
     case labFailed(String)
 }
 
+/// What the microphone does.
+public enum GinkgoMicrophone: Sendable, Equatable {
+    /// Closed.
+    case off
+    /// Open for a conversation: the voice goes to OpenAI.
+    case conversation
+    /// Open only to hear Ginkgo's name, on the Mac (listen mode `name`).
+    case name
+}
+
 /// A plain message about the last action.
 public enum GinkgoNotice: Sendable, Equatable {
     /// No lab project is known to start the conversation on.
@@ -200,6 +210,11 @@ public final class GinkgoModel {
 
     /// Whether a conversation is open now.
     public var isConversationOpen: Bool { presence == .connected && session.state.isConversation }
+
+    /// What the microphone does now, said the same way by the bar and the voice screen.
+    public var microphone: GinkgoMicrophone {
+        isMicrophoneOpen && session.state.isConversation ? .conversation : .off
+    }
 
     // MARK: Connection
 

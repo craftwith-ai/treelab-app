@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import os
 import TreelabGinkgo
 import TreelabLanes
@@ -238,3 +239,10 @@ func decode(_ json: String) throws -> GinkgoEnvelope? {
 
 /// A name known to be valid.
 func name(_ value: String) -> LabName { LabName(value)! }
+
+/// lab's projects as an observable model gives them, for the background start that waits for one.
+@MainActor
+@Observable
+final class ObservedProjects {
+    var first: String?
+}

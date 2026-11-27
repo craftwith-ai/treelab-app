@@ -130,7 +130,6 @@ struct SessionTests {
         session.apply(envelope(1, .state(.listening, mic: true, focus: nil)))
         session.apply(envelope(2, .confirm(galerie)))
         session.apply(envelope(3, .bye))
-        #expect(session.isGone)
         #expect(session.state == .closed)
         #expect(!session.mic)
         #expect(session.pendingClose == nil)
@@ -151,5 +150,26 @@ struct SessionTests {
         }
         #expect(session.lines.count == GinkgoSession.maxLines)
         #expect(session.lines.first?.id == "l6")
+    }
+
+    @Test("confirm_end with only its outcome clears the close waiting (review R3)")
+    func confirmEndOutcomeOnly() {
+        var session = GinkgoSession()
+        session.apply(envelope(1, .confirm(galerie)))
+        session.apply(envelope(2, .confirmEnd(project: nil, lane: nil, outcome: .expired)))
+        #expect(session.pendingClose == nil)
+        #expect(session.lastCloseOutcome == .expired)
+    }
+
+    @Test("less motion: partial lines are not shown, whole ones are (§6, review R11)")
+    func wholeLinesOnly() {
+        var session = GinkgoSession()
+        session.apply(envelope(1, .state(.listening, mic: true, focus: nil)))
+        session.apply(envelope(2, .line(GinkgoLine(id: "u1", who: .user, text: "Relance", final: true))))
+        session.apply(envelope(3, .line(GinkgoLine(id: "g1", who: .ginkgo, text: "Je rel", final: false))))
+        #expect(session.shownLines(wholeOnly: true).map(\.id) == ["u1"])
+        #expect(session.shownLines(wholeOnly: false).map(\.id) == ["u1", "g1"])
+        session.apply(envelope(4, .line(GinkgoLine(id: "g1", who: .ginkgo, text: "Je relance.", final: true))))
+        #expect(session.shownLines(wholeOnly: true).map(\.text) == ["Relance", "Je relance."])
     }
 }

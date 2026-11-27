@@ -91,14 +91,20 @@ struct EventDecodingTests {
     @Test("a seq that does not grow is ignored")
     func seq() {
         var session = GinkgoSession()
-        let first = session.apply(envelope(5, .key(down: true)))
-        let same = session.apply(envelope(5, .key(down: false)))
-        let older = session.apply(envelope(3, .key(down: false)))
+        let first = session.apply(envelope(5, .mode(.key)))
+        let same = session.apply(envelope(5, .mode(.name)))
+        let older = session.apply(envelope(3, .mode(.name)))
         #expect(first && !same && !older)
-        #expect(session.keyDown)
-        let next = session.apply(envelope(6, .key(down: false)))
+        #expect(session.listen == .key)
+        let next = session.apply(envelope(6, .mode(.name)))
         #expect(next)
-        #expect(!session.keyDown)
+        #expect(session.listen == .name)
+    }
+
+    @Test("confirm_end with only its outcome (§5) is read (review R3)")
+    func confirmEndOutcomeOnly() throws {
+        let read = try decode("{\"v\":1,\"ev\":\"confirm_end\",\"seq\":1,\"at\":1795765000000,\"outcome\":\"expired\"}")
+        #expect(read?.event == .confirmEnd(project: nil, lane: nil, outcome: .expired))
     }
 }
 
@@ -127,6 +133,7 @@ struct FramingTests {
         #expect(rest == [Data("{\"ok\":1}".utf8)])
         #expect(framer.dropped == 1)
     }
+
 }
 
 @Suite("Contract v1: Treelab's orders (§4)")
