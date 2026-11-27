@@ -17,8 +17,10 @@ struct FeedQueueColumn: View {
             ScrollView {
                 VStack(spacing: 8) {
                     ForEach(model.requests) { request in
+                        // A click, VoiceOver or any accessibility client's press selects it.
                         FeedQueueCard(request: request, selected: request.id == model.selectedRequest?.id)
                             .onTapGesture { model.select(request.id) }
+                            .accessibilityAction { model.select(request.id) }
                     }
                 }
             }
