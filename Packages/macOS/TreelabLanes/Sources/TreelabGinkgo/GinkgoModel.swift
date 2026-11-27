@@ -156,6 +156,16 @@ public final class GinkgoModel {
         }
     }
 
+    /// Escape on the voice screen: closes the microphone while a conversation is open; otherwise
+    /// takes the person back to the lanes.
+    public func escape() {
+        if isConversationOpen {
+            closeMicrophone()
+        } else {
+            dismissScreen()
+        }
+    }
+
     /// "Cancel" on a close waiting for its spoken "yes".
     public func cancelClose() {
         connection?.send(.cancelClose)
