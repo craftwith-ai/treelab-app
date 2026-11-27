@@ -315,7 +315,9 @@ def apply(rules: Rules, app: Path, brand: str) -> int:
     changed_files, replaced_total = 0, 0
     fallbacks = missing_fallbacks(
         rules, app,
-        lambda key, text: rebrand(rules, text, key, brand)[0] != text or rules.override(key, "en", brand) is not None)
+        # Same keys as check counts: text naming cmux, or already naming the brand (a Treelab package).
+        lambda key, text: brand in text or rebrand(rules, text, key, brand)[0] != text
+        or rules.override(key, "en", brand) is not None)
     for kind, path in text_files(app):
         replaced = 0
         if kind in ("strings", "info"):
