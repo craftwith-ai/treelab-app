@@ -11,6 +11,18 @@ public struct AccountBarEntry: View {
     /// The entry's height, reserved at the bottom of the sidebar.
     public static let height: CGFloat = 46
 
+    /// Lines the second line (trial or plan) may take before it is cut.
+    public static let subtitleLineLimit = 1
+
+    /// Font size of the second line.
+    public static let subtitleFontSize: CGFloat = 10
+
+    /// Width left to the second line in a sidebar of `sidebarWidth` points: outer and inner
+    /// paddings, the Treelab mark, the gear and the spacings between them.
+    public static func subtitleWidth(sidebarWidth: CGFloat) -> CGFloat {
+        sidebarWidth - 2 * 8 - 2 * 12 - 20 - 10 - 10 - 13
+    }
+
     /// Creates the entry.
     /// - Parameter center: the account's windows and model.
     public init(center: TreelabAccountCenter) {
@@ -27,9 +39,9 @@ public struct AccountBarEntry: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(text.accountBarTitle).font(.system(size: 12, weight: .semibold)).foregroundStyle(palette.text)
                     Text(line)
-                        .font(.system(size: 10))
+                        .font(.system(size: Self.subtitleFontSize))
                         .foregroundStyle(palette.textSecondary)
-                        .lineLimit(1)
+                        .lineLimit(Self.subtitleLineLimit)
                         .truncationMode(.tail)
                 }
                 Spacer(minLength: 0)
