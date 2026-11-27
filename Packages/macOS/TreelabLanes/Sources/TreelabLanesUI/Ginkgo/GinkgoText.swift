@@ -11,6 +11,7 @@ struct GinkgoText: Sendable {
     var subtitle: String { t("treelab.ginkgo.subtitle", "your voice to steer your lanes") }
     var micOn: String { t("treelab.ginkgo.mic.on", "Microphone on") }
     var micOnDetail: String { t("treelab.ginkgo.mic.on.detail", "your voice goes to OpenAI during this conversation") }
+    var micNameDetail: String { t("treelab.ginkgo.mic.name.detail", "only its name is listened for, on this Mac") }
     var micOff: String { t("treelab.ginkgo.mic.off", "Microphone off") }
     var micOffDetail: String { t("treelab.ginkgo.mic.off.detail", "nothing is heard, nothing leaves") }
     var listenLabel: String { t("treelab.ginkgo.listen.label", "Listening:") }
@@ -133,10 +134,14 @@ struct GinkgoText: Sendable {
     }
 
     /// The bar entry's second line.
-    func bar(_ presence: GinkgoPresence, state: GinkgoVoiceState, mic: Bool) -> String {
+    func bar(_ presence: GinkgoPresence, microphone: GinkgoMicrophone, state: GinkgoVoiceState) -> String {
         switch presence {
         case .connected:
-            guard mic, state.isConversation else { return t("treelab.ginkgo.bar.closed", "Microphone off · click to talk") }
+            switch microphone {
+            case .off: return t("treelab.ginkgo.bar.closed", "Microphone off · click to talk")
+            case .name: return t("treelab.ginkgo.bar.name", "Microphone on · waiting for its name")
+            case .conversation: break
+            }
             switch state {
             case .thinking: return t("treelab.ginkgo.bar.thinking", "Microphone on · thinking")
             case .speaking: return t("treelab.ginkgo.bar.speaking", "Microphone on · speaking")

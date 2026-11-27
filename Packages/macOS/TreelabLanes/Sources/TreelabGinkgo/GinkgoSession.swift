@@ -9,7 +9,6 @@ public struct GinkgoSession: Sendable, Equatable {
     public static let maxDid = 50
 
     public private(set) var version: String?
-    public private(set) var capabilities: [String] = []
     public private(set) var state: GinkgoVoiceState = .closed
     public private(set) var mic = false
     public private(set) var focus: String?
@@ -22,26 +21,12 @@ public struct GinkgoSession: Sendable, Equatable {
     public private(set) var lastCloseOutcome: GinkgoCloseOutcome?
     /// The last refusal or error, said in plain words by the screen.
     public private(set) var problem: Problem?
-    /// The latest announcement Ginkgo made by itself.
-    public private(set) var news: News?
-    /// The key of the key mode is held.
-    public private(set) var keyDown = false
-    /// Ginkgo said it stops.
-    public private(set) var isGone = false
     private var lastSeq: Int?
 
     /// A refusal (`refused`) or an error (`error`).
     public struct Problem: Sendable, Equatable {
         public var isRefusal: Bool
         public var code: String
-        public var text: String
-    }
-
-    /// An announcement.
-    public struct News: Sendable, Equatable {
-        public var project: String
-        public var lane: String
-        public var kind: String
         public var text: String
     }
 
@@ -54,9 +39,8 @@ public struct GinkgoSession: Sendable, Equatable {
         if let lastSeq, envelope.seq <= lastSeq { return false }
         lastSeq = envelope.seq
         switch envelope.event {
-        case let .hello(version, _, capabilities, listen):
+        case let .hello(version, _, _, listen):
             self.version = version
-            self.capabilities = capabilities
             if let listen { self.listen = listen }
         case let .snapshot(snapshot):
             state = snapshot.state
@@ -74,10 +58,9 @@ public struct GinkgoSession: Sendable, Equatable {
             self.mic = mic
             if let focus { self.focus = focus }
             if newState.isConversation { problem = nil }
-        case .wake, .interrupt:
+        case .wake, .interrupt, .key, .news:
+            // Read (§5) but not shown: announcements are lab's, said by Ginkgo itself.
             break
-        case let .key(down):
-            keyDown = down
         case let .line(line):
             if let index = lines.lastIndex(where: { $0.id == line.id }) {
                 lines[index] = line.dated(lines[index].at ?? envelope.at)
@@ -94,10 +77,10 @@ public struct GinkgoSession: Sendable, Equatable {
             pendingClose = close
             lastCloseOutcome = nil
         case let .confirmEnd(project, lane, outcome):
-            if pendingClose?.project == project, pendingClose?.lane == lane { pendingClose = nil }
+            // Only one close waits at a time: an end without project nor lane is its end.
+            let named = project != nil || lane != nil
+            if !named || (pendingClose?.project == project && pendingClose?.lane == lane) { pendingClose = nil }
             lastCloseOutcome = outcome
-        case let .news(project, lane, kind, text):
-            news = News(project: project, lane: lane, kind: kind, text: text)
         case let .mode(listen):
             self.listen = listen
         case let .refused(reason, text):
@@ -109,7 +92,6 @@ public struct GinkgoSession: Sendable, Equatable {
         case .ack:
             break
         case .bye:
-            isGone = true
             state = .closed
             mic = false
             pendingClose = nil
@@ -119,7 +101,7 @@ public struct GinkgoSession: Sendable, Equatable {
 
     /// The lines to show: with less motion asked by the Mac, whole lines only (§6).
     public func shownLines(wholeOnly: Bool) -> [GinkgoLine] {
-        lines
+        wholeOnly ? lines.filter(\.final) : lines
     }
 
     /// A new conversation shows only its own lines.

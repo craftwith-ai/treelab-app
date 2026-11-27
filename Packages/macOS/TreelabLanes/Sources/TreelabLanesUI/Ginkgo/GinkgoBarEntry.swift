@@ -7,7 +7,6 @@ public import TreelabLanes
 /// to show the voice screen and opens the conversation (`treelabGinkgoRequested`).
 public struct GinkgoBarEntry: View {
     private let model: GinkgoModel
-    private let lanes: LanesModel
     @State private var host = HostWindow()
     private let palette = HUDPalette()
     private let text = GinkgoText()
@@ -18,15 +17,13 @@ public struct GinkgoBarEntry: View {
     /// Creates the entry.
     /// - Parameters:
     ///   - model: Ginkgo's model.
-    ///   - lanes: the lanes model, whose projects let a waiting background start go.
-    public init(model: GinkgoModel, lanes: LanesModel) {
+    public init(model: GinkgoModel) {
         self.model = model
-        self.lanes = lanes
     }
 
     public var body: some View {
         let mic = model.isMicrophoneOpen
-        let status = text.bar(model.presence, state: model.session.state, mic: model.session.mic)
+        let status = text.bar(model.presence, microphone: model.microphone, state: model.session.state)
         Button {
             host.requestGinkgo()
         } label: {
@@ -65,6 +62,5 @@ public struct GinkgoBarEntry: View {
         .accessibilityValue(status)
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .onChange(of: lanes.state.snapshot.projects.count, initial: true) { model.projectsChanged() }
     }
 }

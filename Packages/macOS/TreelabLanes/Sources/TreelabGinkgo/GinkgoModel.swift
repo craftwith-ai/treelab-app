@@ -89,6 +89,13 @@ public final class GinkgoModel {
     @ObservationIgnored private var isScreenVisible = false
     @ObservationIgnored private var quitSent = false
     @ObservationIgnored private var backgroundLaunchWaiting = false
+    /// A click that waits for the connection's snapshot (or for Ginkgo to start) to open the
+    /// conversation, so an open one is never opened twice.
+    @ObservationIgnored private var pendingOpen: LabName?
+    @ObservationIgnored private var hasSnapshot = false
+    /// The connection's last `seq`, levels included; kept here so a level never touches the
+    /// observed session.
+    @ObservationIgnored private var lastSeq: Int?
 
     /// Creates the model.
     /// - Parameters:
@@ -148,7 +155,12 @@ public final class GinkgoModel {
             return
         }
         if connectIfListening() {
-            if !session.state.isConversation { connection?.send(.open(focus: project)) }
+            openWhenKnown(project)
+            return
+        }
+        if presence == .starting {
+            // Ginkgo is starting (in the background): the conversation opens once connected.
+            pendingOpen = project
             return
         }
         Task { await launch(project: project, background: false) }
@@ -205,15 +217,29 @@ public final class GinkgoModel {
         if backgroundLaunchWaiting, connection == nil { launchInBackground() }
     }
 
+    /// Opens the conversation on `project` unless one is open; on a fresh connection, once its
+    /// snapshot says whether one is.
+    private func openWhenKnown(_ project: LabName) {
+        guard hasSnapshot else {
+            pendingOpen = project
+            return
+        }
+        if !session.state.isConversation { connection?.send(.open(focus: project)) }
+    }
+
     /// Whether the microphone is open now.
     public var isMicrophoneOpen: Bool { presence == .connected && session.mic }
 
     /// Whether a conversation is open now.
     public var isConversationOpen: Bool { presence == .connected && session.state.isConversation }
 
+    /// Whether the Mac asks for less motion: the heart stays still and only whole lines are shown.
+    public var isMotionReduced: Bool { reduceMotion() }
+
     /// What the microphone does now, said the same way by the bar and the voice screen.
     public var microphone: GinkgoMicrophone {
-        isMicrophoneOpen && session.state.isConversation ? .conversation : .off
+        guard isMicrophoneOpen else { return .off }
+        return session.state.isConversation ? .conversation : .name
     }
 
     // MARK: Connection
@@ -229,11 +255,11 @@ public final class GinkgoModel {
         } catch let refusal as GinkgoSocketRefusal {
             if case .absent = refusal {
                 switch presence {
-                case .unknown, .connected, .refused: presence = .absent
+                case .unknown, .connected, .refused: setPresence(.absent)
                 default: break
                 }
             } else {
-                presence = .refused(refusal)
+                setPresence(.refused(refusal))
             }
             return false
         } catch {
@@ -244,8 +270,10 @@ public final class GinkgoModel {
     private func attach(_ connection: GinkgoConnection) {
         self.connection = connection
         session = GinkgoSession()
-        presence = .connected
+        setPresence(.connected)
         isSubscribedToLevels = false
+        hasSnapshot = false
+        lastSeq = nil
         quitSent = false
         backgroundLaunchWaiting = false
         connection.send(.hello(version: clientVersion))
@@ -261,6 +289,9 @@ public final class GinkgoModel {
         guard source === connection else { return }
         switch item {
         case let .event(envelope):
+            // One growing `seq` per connection for every event, levels included (§3).
+            if let lastSeq, envelope.seq <= lastSeq { return }
+            lastSeq = envelope.seq
             if case let .level(input, output) = envelope.event {
                 if isSubscribedToLevels { levels.update(input: input, output: output) }
                 return
@@ -272,6 +303,16 @@ public final class GinkgoModel {
             case .bye:
                 detach(.absent)
                 return
+            case let .hello(_, protocolVersion, _, _) where protocolVersion != ginkgoProtocolVersion:
+                // §7: Treelab requires protocol 1, also from a Ginkgo already running.
+                detach(.updateNeeded)
+                return
+            case .snapshot:
+                hasSnapshot = true
+                if let project = pendingOpen {
+                    pendingOpen = nil
+                    if !session.state.isConversation { source.send(.open(focus: project)) }
+                }
             case let .ack(_, ok, text) where !ok:
                 notice = .orderRefused(text ?? "")
             default:
@@ -291,10 +332,18 @@ public final class GinkgoModel {
     private func detach(_ newPresence: GinkgoPresence) {
         connection?.close()
         connection = nil
-        presence = newPresence
+        setPresence(newPresence)
         session = GinkgoSession()
         isSubscribedToLevels = false
         levels.reset()
+    }
+
+    /// Where Ginkgo stands changed: a notice about an earlier action no longer holds, and a click
+    /// waiting to open the conversation is dropped when Ginkgo cannot be reached.
+    private func setPresence(_ newPresence: GinkgoPresence) {
+        if newPresence != presence { notice = nil }
+        if newPresence != .starting, newPresence != .connected { pendingOpen = nil }
+        presence = newPresence
     }
 
     private func updateLevelSubscription() {
@@ -310,7 +359,7 @@ public final class GinkgoModel {
     }
 
     private func ginkgoEnded() {
-        if presence == .starting { presence = .absent }
+        if presence == .starting { setPresence(.absent) }
     }
 
     // MARK: Launch through lab
@@ -318,10 +367,21 @@ public final class GinkgoModel {
     private func launchInBackground() {
         guard let project = focusProject() else {
             backgroundLaunchWaiting = true
+            followFocus()
             return
         }
         backgroundLaunchWaiting = false
         Task { await launch(project: project, background: true) }
+    }
+
+    /// Waits for the project a background start needs: whatever `focus` reads (lab's projects,
+    /// the lane shown) is followed, so no view has to be on screen to tell.
+    private func followFocus() {
+        withObservationTracking {
+            _ = focusProject()
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in self?.projectsChanged() }
+        }
     }
 
     /// Starts Ginkgo through lab, after `lab ginkgo status` says it speaks this contract and the
@@ -329,39 +389,39 @@ public final class GinkgoModel {
     func launch(project: LabName, background: Bool) async {
         guard presence != .starting else { return }
         guard let runner else {
-            presence = .labFailed("")
+            setPresence(.labFailed(""))
             return
         }
-        presence = .starting
+        setPresence(.starting)
         do {
             let status = try await runner.run(.ginkgoStatus)
             let block = KeyValueBlockParser().blocks(in: status.standardOutput).first
             guard status.status == 0, block?.first("PROTOCOL") == String(ginkgoProtocolVersion) else {
-                presence = .updateNeeded
+                setPresence(.updateNeeded)
                 return
             }
             guard block?.first("KEY") == "present" else {
-                presence = .keyMissing
+                setPresence(.keyMissing)
                 return
             }
             // Started meanwhile (its ready signal came): lab would stop it to start it again.
             if connectIfListening() {
-                if !background, !session.state.isConversation { connection?.send(.open(focus: project)) }
+                if !background { openWhenKnown(project) }
                 return
             }
             let result = try await runner.run(.ginkgoLaunch(project: project, background: background))
             if result.status == 2 {
-                presence = .updateNeeded
+                setPresence(.updateNeeded)
                 return
             }
             guard result.status == 0 else {
-                presence = .labFailed(Self.firstLine(result.standardError))
+                setPresence(.labFailed(Self.firstLine(result.standardError)))
                 return
             }
             // Its ready signal may have come before lab returned.
             connectIfListening()
         } catch {
-            presence = .labFailed(Self.firstLine(String(describing: error)))
+            setPresence(.labFailed(Self.firstLine(String(describing: error))))
         }
     }
 

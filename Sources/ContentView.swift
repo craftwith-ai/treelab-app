@@ -533,6 +533,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
         isVisible: Bool,
         locksTextInputFocus: Bool = true,
         onDismiss: @MainActor @escaping (CommandPaletteInteractionDismissal) -> Void = { _ in },
+        keepsOverlay: @MainActor @escaping (CommandPaletteInteractionDismissal) -> Bool = { _ in false },
         makeRootView: @MainActor () -> AnyView = { AnyView(EmptyView()) }
     ) {
         self.locksTextInputFocus = locksTextInputFocus
@@ -578,7 +579,9 @@ private final class WindowCommandPaletteOverlayController: NSObject {
                     self?.updateFocusLockForWindowState()
                 },
                 onDismiss: { [weak self] dismissal in
-                    guard let self, self.isPaletteVisible else { return }
+                    // Treelab: an overlay may refuse a dismissal (Ginkgo's voice screen stays while
+                    // the app is in the background or a menu is open); it is then left untouched.
+                    guard let self, self.isPaletteVisible, !keepsOverlay(dismissal) else { return }
                     self.hideOverlay()
                     onDismiss(dismissal)
                 }
@@ -1078,6 +1081,14 @@ struct ContentView: View {
     /// Ginkgo's voice, owned by the composition root.
     private var treelabGinkgo: GinkgoModel? {
         AppDelegate.shared?.treelabGinkgo
+    }
+
+    /// Ginkgo's voice screen stays while Treelab is in the background or a menu is open (its
+    /// levels stop while the window is hidden): only a click outside it dismisses it.
+    private func treelabGinkgoKeepsOverlay(_ dismissal: CommandPaletteInteractionDismissal) -> Bool {
+        guard isTreelabGinkgoPresented else { return false }
+        if case .pointer = dismissal { return false }
+        return true
     }
 
     /// Treelab's lanes, owned by the composition root.
@@ -3416,14 +3427,14 @@ struct ContentView: View {
                     } else if isTreelabFeedPresented {
                         dismissTreelabFeed()
                     } else if isTreelabGinkgoPresented {
-                        // Treelab: the voice screen stays while the app is in the background or a
-                        // menu is open (its levels stop while the window is hidden); only a click
-                        // outside it leaves it, and the conversation goes on.
-                        if case .pointer = dismissal { treelabGinkgo?.dismissScreen() }
+                        // Treelab: only a click outside the voice screen leaves it (`keepsOverlay`
+                        // refuses the other dismissals), and the conversation goes on.
+                        treelabGinkgo?.dismissScreen()
                     } else {
                         dismissCommandPalette(for: dismissal, in: window)
                     }
-                }
+                },
+                keepsOverlay: treelabGinkgoKeepsOverlay
             ) { AnyView(commandPaletteOverlay) }
         }))
 
@@ -3702,14 +3713,14 @@ struct ContentView: View {
                         } else if isTreelabFeedPresented {
                             dismissTreelabFeed()
                         } else if isTreelabGinkgoPresented {
-                            // Treelab: the voice screen stays while the app is in the background or a
-                            // menu is open (its levels stop while the window is hidden); only a click
-                            // outside it leaves it, and the conversation goes on.
-                            if case .pointer = dismissal { treelabGinkgo?.dismissScreen() }
+                            // Treelab: only a click outside the voice screen leaves it (`keepsOverlay`
+                            // refuses the other dismissals), and the conversation goes on.
+                            treelabGinkgo?.dismissScreen()
                         } else {
                             dismissCommandPalette(for: dismissal, in: window)
                         }
-                    }
+                    },
+                    keepsOverlay: treelabGinkgoKeepsOverlay
                 ) { commandPaletteOverlayView }
             TerminalWindowPortalRegistry.scheduleExternalGeometrySynchronize(for: window)
             BrowserWindowPortalRegistry.scheduleExternalGeometrySynchronize(for: window)
@@ -12205,7 +12216,7 @@ struct VerticalTabsSidebar: View, Equatable {
         .overlay(alignment: .bottom) {
             // Treelab: Ginkgo, above the footer; it opens the voice screen in this window.
             if isPresented, let appDelegate = AppDelegate.shared {
-                GinkgoBarEntry(model: appDelegate.treelabGinkgo, lanes: appDelegate.treelabLanes)
+                GinkgoBarEntry(model: appDelegate.treelabGinkgo)
                     .padding(.bottom, 34)
             }
         }

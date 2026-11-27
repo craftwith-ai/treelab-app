@@ -35,7 +35,7 @@ public struct GinkgoVoiceScreen: View {
                         .frame(width: size.leftColumn)
                     VStack(alignment: .leading, spacing: 14) {
                         GinkgoMessage(model: model)
-                        GinkgoConversationCard(session: model.session, size: size)
+                        GinkgoConversationCard(session: model.session, wholeOnly: model.isMotionReduced, size: size)
                         GinkgoActivity(model: model, size: size, onShowRequest: onShowRequest)
                         GinkgoScreenFooter(model: model)
                     }
@@ -100,7 +100,7 @@ struct GinkgoScreenHeader: View {
                 Text(text.subtitle).font(.system(size: 13)).foregroundStyle(palette.textSecondary)
             }
             Spacer(minLength: 12)
-            GinkgoMicrophonePill(open: model.isMicrophoneOpen)
+            GinkgoMicrophonePill(microphone: model.microphone)
             if let listen = model.session.listen {
                 HStack(spacing: 6) {
                     Text(text.listenLabel).foregroundStyle(palette.textSecondary)
@@ -118,9 +118,19 @@ struct GinkgoScreenHeader: View {
 
 /// The microphone, always said: red and filled while open, hollow while closed.
 struct GinkgoMicrophonePill: View {
-    let open: Bool
+    let microphone: GinkgoMicrophone
     private let palette = HUDPalette()
     private let text = GinkgoText()
+
+    private var open: Bool { microphone != .off }
+
+    private var detail: String {
+        switch microphone {
+        case .off: text.micOffDetail
+        case .conversation: text.micOnDetail
+        case .name: text.micNameDetail
+        }
+    }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -133,7 +143,7 @@ struct GinkgoMicrophonePill: View {
             }
             .frame(width: 9, height: 9)
             Text(open ? text.micOn : text.micOff).fontWeight(.semibold)
-            Text(open ? text.micOnDetail : text.micOffDetail).foregroundStyle(palette.textSecondary)
+            Text(detail).foregroundStyle(palette.textSecondary)
         }
         .font(.system(size: 13))
         .lineLimit(1)
@@ -273,18 +283,21 @@ struct GinkgoMessage: View {
 /// The open conversation, written as it is said; a partial line ends with a fixed cursor.
 struct GinkgoConversationCard: View {
     let session: GinkgoSession
+    /// Less motion asked by the Mac: whole lines only, no line written as it is said (§6).
+    let wholeOnly: Bool
     let size: GinkgoScreenSize
     private let palette = HUDPalette()
     private let text = GinkgoText()
 
     var body: some View {
+        let lines = session.shownLines(wholeOnly: wholeOnly)
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(text.conversationTitle).font(.system(size: 12, weight: .bold)).tracking(1.9).foregroundStyle(palette.cyan)
                     .accessibilityAddTraits(.isHeader)
                 Text(text.conversationDetail).font(.system(size: 12)).foregroundStyle(palette.textSecondary)
             }
-            if session.lines.isEmpty {
+            if lines.isEmpty {
                 Text(text.conversationEmpty).font(.system(size: 13)).foregroundStyle(palette.textSecondary)
                 Spacer(minLength: 0)
             } else {
@@ -295,14 +308,14 @@ struct GinkgoConversationCard: View {
                     ScrollViewReader { reader in
                         ScrollView {
                             VStack(alignment: .leading, spacing: 12) {
-                                ForEach(session.lines, id: \.id) { line in
+                                ForEach(lines, id: \.id) { line in
                                     GinkgoLineRow(line: line, size: size).id(line.id)
                                 }
                             }
                             .frame(maxWidth: .infinity, minHeight: viewport.size.height, alignment: .topLeading)
                         }
                         .defaultScrollAnchor(.bottom)
-                        .onChange(of: session.lines.last) { _, last in
+                        .onChange(of: lines.last) { _, last in
                             if let last { reader.scrollTo(last.id, anchor: .bottom) }
                         }
                     }

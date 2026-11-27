@@ -78,10 +78,9 @@ public enum GinkgoEventDecoder {
             return about(o).map(GinkgoEvent.about)
         case "confirm": return confirm(o).map(GinkgoEvent.confirm)
         case "confirm_end":
-            guard let project = o["project"] as? String, let lane = o["lane"] as? String,
-                  let outcome = (o["outcome"] as? String).flatMap(GinkgoCloseOutcome.init(rawValue:))
-            else { return nil }
-            return .confirmEnd(project: project, lane: lane, outcome: outcome)
+            // §5 gives only `outcome`; a project and a lane, when sent, are kept.
+            guard let outcome = (o["outcome"] as? String).flatMap(GinkgoCloseOutcome.init(rawValue:)) else { return nil }
+            return .confirmEnd(project: o["project"] as? String, lane: o["lane"] as? String, outcome: outcome)
         case "news":
             guard let project = o["project"] as? String, let lane = o["lane"] as? String,
                   let kind = o["kind"] as? String, let text = o["text"] as? String

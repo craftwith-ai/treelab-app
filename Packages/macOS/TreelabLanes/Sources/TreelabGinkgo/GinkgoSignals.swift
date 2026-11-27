@@ -22,11 +22,14 @@ public struct GinkgoSystemSignals: GinkgoSignals {
 
     public func ready() -> AsyncStream<Void> {
         AsyncStream { continuation in
-            let token = DistributedNotificationCenter.default().addObserver(forName: Self.readyName, object: nil, queue: nil) { _ in
-                continuation.yield()
-            }
-            let holder = ObserverHolder(token: token, center: DistributedNotificationCenter.default())
-            continuation.onTermination = { _ in holder.remove() }
+            let observer = ReadyObserver(continuation: continuation)
+            // AppKit holds distributed notifications back while the app is inactive: the ready
+            // signal must come at once, or Treelab would wait for its own activation.
+            DistributedNotificationCenter.default().addObserver(
+                observer, selector: #selector(ReadyObserver.ready(_:)), name: Self.readyName, object: nil,
+                suspensionBehavior: .deliverImmediately
+            )
+            continuation.onTermination = { _ in observer.remove() }
         }
     }
 
@@ -41,6 +44,20 @@ public struct GinkgoSystemSignals: GinkgoSignals {
             continuation.onTermination = { _ in holder.remove() }
         }
     }
+}
+
+/// Yields each ready signal; removed from the center when its stream ends.
+private final class ReadyObserver: NSObject, @unchecked Sendable {
+    // The continuation is Sendable; the center is thread-safe.
+    private let continuation: AsyncStream<Void>.Continuation
+
+    init(continuation: AsyncStream<Void>.Continuation) {
+        self.continuation = continuation
+    }
+
+    @objc func ready(_ notification: Notification) { continuation.yield() }
+
+    func remove() { DistributedNotificationCenter.default().removeObserver(self) }
 }
 
 /// Removes a block observer when its stream ends.
