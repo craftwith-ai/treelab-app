@@ -9,10 +9,10 @@ public struct AccountBarEntry: View {
     private let text = AccountText()
 
     /// The entry's height, reserved at the bottom of the sidebar.
-    public static let height: CGFloat = 46
+    public static let height: CGFloat = 54
 
     /// Lines the second line (trial or plan) may take before it is cut.
-    public static let subtitleLineLimit = 1
+    public static let subtitleLineLimit = 2
 
     /// Font size of the second line.
     public static let subtitleFontSize: CGFloat = 10
