@@ -817,5 +817,35 @@
     "arguments": [
       1
     ]
+  },
+  "treelab.account.bar.trialDays": {
+    "source": "Free trial · %lld days left",
+    "arguments": [
+      1
+    ]
+  },
+  "treelab.account.signInDetail.days": {
+    "source": "No password: a one-time link arrives in your inbox. The %lld-day free trial starts at your first sign-in, no card needed.",
+    "arguments": [
+      1
+    ]
+  },
+  "treelab.account.seats": {
+    "source": "%lld seats",
+    "arguments": [
+      1
+    ]
+  },
+  "treelab.account.plan.daysLeft": {
+    "source": "%lld days left",
+    "arguments": [
+      1
+    ]
+  },
+  "treelab.welcome.trial.titleDays": {
+    "source": "Your account, %lld-day free trial",
+    "arguments": [
+      1
+    ]
   }
 }
