@@ -315,6 +315,11 @@ struct GinkgoConversationCard: View {
                             .frame(maxWidth: .infinity, minHeight: viewport.size.height, alignment: .topLeading)
                         }
                         .defaultScrollAnchor(.bottom)
+                        // What Ginkgo did, the lane and the close often arrive after the lines and
+                        // take the card's height. AppKit then keeps the top in place, and a scroll
+                        // asked without new lines still measures the old height and does nothing:
+                        // a new height makes a new scroll view, which starts at its bottom anchor.
+                        .id(viewport.size.height)
                         .onChange(of: lines.last) { _, last in
                             if let last { reader.scrollTo(last.id, anchor: .bottom) }
                         }
