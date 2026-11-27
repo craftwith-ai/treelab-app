@@ -70,4 +70,31 @@ struct AccountScreensTests {
         #expect(!said.isProblem)
         #expect(AccountPresentation().notice(.refused("no")).isProblem)
     }
+
+    /// A demo centre on an empty demo folder, with its own preferences.
+    @MainActor
+    private func demoCenter(screen: String?, store: UserDefaults) throws -> TreelabAccountCenter {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("treelab-demo-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let arguments = ["Treelab", "-TreelabAccountDemo", folder.path] + (screen.map { ["-TreelabAccountDemoScreen", $0] } ?? [])
+        let demo = try #require(AccountDemoLaunch(arguments: arguments))
+        return TreelabAccountCenter(model: .demo(folder: folder), notifications: DemoNotificationPermission(folder: folder),
+                                    defaults: store, demo: demo)
+    }
+
+    @Test("a demo launch without a screen follows the first-launch rule, in the demo's own preferences")
+    @MainActor
+    func demoWithoutScreenFollowsTheFirstLaunchRule() throws {
+        let store = defaults()
+        try demoCenter(screen: nil, store: store).start(showsWelcomeOnFirstLaunch: true)
+        #expect(store.bool(forKey: TreelabAccountCenter.welcomeSeenKey))
+    }
+
+    @Test("a demo launch on a named screen opens that screen and leaves the first launch untouched")
+    @MainActor
+    func demoScreenLeavesTheFirstLaunch() throws {
+        let store = defaults()
+        try demoCenter(screen: "account", store: store).start(showsWelcomeOnFirstLaunch: true)
+        #expect(!store.bool(forKey: TreelabAccountCenter.welcomeSeenKey))
+    }
 }
