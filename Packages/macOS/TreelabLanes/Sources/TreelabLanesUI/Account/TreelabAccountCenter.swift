@@ -201,7 +201,8 @@ public final class TreelabAccountCenter {
         guard !started else { return }
         started = true
         model.start()
-        if let demo {
+        // A demo on a named screen shows it; a demo without one launches like Treelab, in its own preferences.
+        if let demo, demo.screen != nil {
             Task { @MainActor in self.openDemoScreen(demo) }
             return
         }
