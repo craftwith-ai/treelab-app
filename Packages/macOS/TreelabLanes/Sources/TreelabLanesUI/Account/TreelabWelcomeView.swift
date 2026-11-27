@@ -86,13 +86,13 @@ struct WelcomeFooter: Equatable {
     enum Later: Equatable { case skipsStep, closes }
 
     let back: Bool
-    let later: Later?
+    let later: Later
     let isLast: Bool
 
     init(step: Int, count: Int = TreelabWelcomeView.stepCount) {
         back = step > 1
         isLast = step >= count
-        later = isLast ? .closes : (step > 1 ? .skipsStep : nil)
+        later = isLast || step <= 1 ? .closes : .skipsStep
     }
 }
 
@@ -142,7 +142,6 @@ private struct WelcomeSteps: View {
                 switch footer.later {
                 case .skipsStep: Button(text.welcomeLater) { go(step + 1) }.buttonStyle(HUDSecondaryButtonStyle())
                 case .closes: Button(text.welcomeLater, action: finish).buttonStyle(HUDSecondaryButtonStyle())
-                case nil: EmptyView()
                 }
                 if footer.isLast {
                     Button(text.welcomeEnter, action: finish).buttonStyle(HUDPrimaryButtonStyle()).keyboardShortcut(.defaultAction)
@@ -276,7 +275,8 @@ private struct TrialStep: View {
             }
             if let offer, offer.isComplete, let month = presentation.price(offer.month, currency: offer.currency),
                let year = presentation.price(offer.year, currency: offer.currency) {
-                HUDNote(text: text.welcomeTrialThen(month, year) + (offer.taxIncluded ? " (\(text.accountOfferTaxIncluded))" : ""))
+                HUDNote(text: text.welcomeTrialThen(month, year))
+                if offer.taxIncluded { HUDNote(text: text.accountOfferTaxIncluded) }
             }
         }
         HUDNote(text: text.welcomeTrialWhy)

@@ -1163,19 +1163,19 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Essai gratuit · %lld jour restant"
+                  "value": "Essai gratuit · %lld jour restant"
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Essai gratuit · %lld jours restants"
+                  "value": "Essai gratuit · %lld jours restants"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Essai gratuit · %lld jours restants"
+                  "value": "Essai gratuit · %lld jours restants"
                 }
               }
             }
@@ -3856,7 +3856,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lien envoyé à %@. Ouvre-le sur ce Mac pour te connecter."
+            "value": "Lien envoyé à %@. Ouvre-le sur ce Mac pour te connecter."
           }
         },
         "it": {
@@ -4357,7 +4357,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "lab a refusé, rien n’a changé : %@"
+            "value": "lab a refusé, rien n’a changé : %@"
           }
         },
         "it": {
@@ -4858,7 +4858,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Remise d’équipe : −%@ sur tous les postes dès %lld postes"
+            "value": "Remise d’équipe : −%@ sur tous les postes dès %lld postes"
           }
         },
         "it": {
@@ -5850,19 +5850,19 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld jour restant"
+                  "value": "%lld jour restant"
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld jours restants"
+                  "value": "%lld jours restants"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld jours restants"
+                  "value": "%lld jours restants"
                 }
               }
             }
@@ -6284,7 +6284,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se termine le %@"
+            "value": "Se termine le %@"
           }
         },
         "it": {
@@ -6785,7 +6785,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se renouvelle le %@"
+            "value": "Se renouvelle le %@"
           }
         },
         "it": {
@@ -7522,19 +7522,19 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld poste"
+                  "value": "%lld poste"
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld postes"
+                  "value": "%lld postes"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld postes"
+                  "value": "%lld postes"
                 }
               }
             }
@@ -8568,19 +8568,19 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Pas de mot de passe : un lien à usage unique arrive dans ta boîte. L’essai gratuit de %lld jour démarre à ta première connexion, sans carte."
+                  "value": "Pas de mot de passe : un lien à usage unique arrive dans ta boîte. L’essai gratuit de %lld jour démarre à ta première connexion, sans carte."
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Pas de mot de passe : un lien à usage unique arrive dans ta boîte. L’essai gratuit de %lld jours démarre à ta première connexion, sans carte."
+                  "value": "Pas de mot de passe : un lien à usage unique arrive dans ta boîte. L’essai gratuit de %lld jours démarre à ta première connexion, sans carte."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Pas de mot de passe : un lien à usage unique arrive dans ta boîte. L’essai gratuit de %lld jours démarre à ta première connexion, sans carte."
+                  "value": "Pas de mot de passe : un lien à usage unique arrive dans ta boîte. L’essai gratuit de %lld jours démarre à ta première connexion, sans carte."
                 }
               }
             }
@@ -10635,7 +10635,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Langue de Treelab : %@"
+            "value": "Langue de Treelab : %@"
           }
         },
         "it": {
@@ -25375,19 +25375,19 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld couloir"
+                  "value": "%lld couloir"
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld couloirs"
+                  "value": "%lld couloirs"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld couloirs"
+                  "value": "%lld couloirs"
                 }
               }
             }
@@ -25794,19 +25794,19 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld projet"
+                  "value": "%lld projet"
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld projets"
+                  "value": "%lld projets"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld projets"
+                  "value": "%lld projets"
                 }
               }
             }
@@ -26213,19 +26213,19 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld arrêtée"
+                  "value": "%lld arrêtée"
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld arrêtées"
+                  "value": "%lld arrêtées"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld arrêtées"
+                  "value": "%lld arrêtées"
                 }
               }
             }
@@ -26632,19 +26632,19 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld t’attend"
+                  "value": "%lld t’attend"
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld t’attendent"
+                  "value": "%lld t’attendent"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld t’attendent"
+                  "value": "%lld t’attendent"
                 }
               }
             }
@@ -27051,19 +27051,19 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld travaille"
+                  "value": "%lld travaille"
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld travaillent"
+                  "value": "%lld travaillent"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%lld travaillent"
+                  "value": "%lld travaillent"
                 }
               }
             }
@@ -31121,7 +31121,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "lab va effacer : %@"
+            "value": "lab va effacer : %@"
           }
         },
         "it": {
@@ -42039,7 +42039,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "ÉTAPE %lld SUR %lld"
+            "value": "ÉTAPE %lld SUR %lld"
           }
         },
         "it": {
@@ -42540,7 +42540,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connecté : %@"
+            "value": "Connecté : %@"
           }
         },
         "it": {
@@ -42792,7 +42792,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ensuite, si tu continues : %@ par mois ou %@ par an, par poste."
+            "value": "Ensuite, si tu continues : %@ par mois ou %@ par an, par poste."
           }
         },
         "it": {
@@ -43153,19 +43153,19 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Ton compte, essai gratuit de %lld jour"
+                  "value": "Ton compte, essai gratuit de %lld jour"
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Ton compte, essai gratuit de %lld jours"
+                  "value": "Ton compte, essai gratuit de %lld jours"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Ton compte, essai gratuit de %lld jours"
+                  "value": "Ton compte, essai gratuit de %lld jours"
                 }
               }
             }
