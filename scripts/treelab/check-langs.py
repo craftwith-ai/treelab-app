@@ -7,10 +7,12 @@ The languages are those of the app's main catalogue (Resources/Localizable.xcstr
   (upstream's own gaps stay out: they are not Treelab's texts).
 A key counts as translated in a language when it has a non-empty stringUnit there, or plural or
 device variations whose every stringUnit is non-empty. French values must use "tu": a "vous",
-"votre" or "vos" word in a French value is reported.
+"votre" or "vos" word in a French value is reported. French spacing: a value inserted after a word is
+joined by a normal no-break space (U+00A0), never a narrow one (U+202F reads "de14"; it stays right
+inside « »), and an inserted number keeps its unit on its line (no plain space after "%lld").
 
 Usage: scripts/treelab/check-langs.py [--catalog PATH]... [--new-since REV]
-Prints MISSING=<n> FRENCH_VOUS=<n> LANGUAGES=<n> KEYS=<n>, one line per problem; exits 1 on any.
+Prints MISSING=<n> FRENCH_VOUS=<n> FRENCH_SPACE=<n> LANGUAGES=<n> KEYS=<n>, one line per problem; exits 1 on any.
 """
 import argparse
 import json
@@ -23,6 +25,8 @@ ROOT = Path(__file__).resolve().parents[2]
 MAIN = ROOT / "Resources/Localizable.xcstrings"
 DEFAULT = ROOT / "Packages/macOS/TreelabLanes/Sources/TreelabLanesUI/Resources/Localizable.xcstrings"
 VOUS = re.compile(r"\b(vous|votre|vos)\b", re.IGNORECASE)
+# A narrow no-break space before an inserted value (not right after «), or a breakable space after a number.
+FRENCH_SPACE = re.compile(r"(?<!«)\u202f%|%(?:\d+\$)?lld [^\W\d]")
 
 
 def units(node):
@@ -67,7 +71,7 @@ def main():
             if key not in old_keys and entry.get("shouldTranslate") is not False:
                 checked.append(("Resources", key, entry))
 
-    missing = vous = 0
+    missing = vous = spacing = 0
     for catalog, key, entry in checked:
         locs = entry.get("localizations") or {}
         absent = [lang for lang in languages if not translated(locs.get(lang))]
@@ -78,8 +82,11 @@ def main():
             if VOUS.search(value):
                 vous += 1
                 print(f"vous {catalog} {key!r}: {value!r}")
-    print(f"MISSING={missing} FRENCH_VOUS={vous} LANGUAGES={len(languages)} KEYS={len(checked)}")
-    return 1 if missing or vous else 0
+            if FRENCH_SPACE.search(value):
+                spacing += 1
+                print(f"french-space {catalog} {key!r}: {value!r}")
+    print(f"MISSING={missing} FRENCH_VOUS={vous} FRENCH_SPACE={spacing} LANGUAGES={len(languages)} KEYS={len(checked)}")
+    return 1 if missing or vous or spacing else 0
 
 
 if __name__ == "__main__":
