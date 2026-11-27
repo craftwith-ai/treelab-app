@@ -129,7 +129,7 @@ struct LabCommandTests {
         #expect(LabCommand.snapshot(readerPID: 42, project: nil, lane: nil).arguments == ["app", "snapshot", "--reader", "42"])
         #expect(LabCommand.snapshot(readerPID: 42, project: p, lane: l).arguments == ["app", "snapshot", "--reader", "42", "demo", "api"])
         #expect(LabCommand.question(project: p, lane: l).arguments == ["ginkgo", "question", "demo", "api"])
-        #expect(LabCommand.answerChoices(project: p, lane: l, qid: "q-1", choices: [2: [1, 3], 1: [2]]).arguments
+        #expect(LabCommand.answerChoices(project: p, lane: l, qid: try #require(LabQuestionID("q-1")), choices: [2: [1, 3], 1: [2]]).arguments
             == ["ginkgo", "answer", "demo", "api", "--qid", "q-1", "--q", "1", "--choice", "2", "--q", "2", "--choice", "1", "--choice", "3"])
         #expect(LabCommand.next(project: p, lane: l).arguments == ["next", "demo", "api"])
         #expect(LabCommand.focus(project: p, lane: l).arguments == ["app", "focus", "demo", "api"])

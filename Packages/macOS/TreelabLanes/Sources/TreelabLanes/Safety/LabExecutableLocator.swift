@@ -60,10 +60,16 @@ public struct LabExecutableLocator: Sendable {
         guard info.st_uid == ownerID || info.st_uid == 0 else { return .failure(.wrongOwner) }
         guard (info.st_mode & (S_IWGRP | S_IWOTH)) == 0 else { return .failure(.writableByOthers) }
         guard (info.st_mode & S_IXUSR) != 0 else { return .failure(.notExecutable) }
-        var folder = stat()
-        let folderPath = (path as NSString).deletingLastPathComponent
-        guard stat(folderPath, &folder) == 0, (folder.st_mode & (S_IWGRP | S_IWOTH)) == 0 else {
-            return .failure(.folderWritableByOthers)
+        // Every folder from the program up to "/" must belong to the user or root and be
+        // writable by nobody else: otherwise another account could swap a folder on the way.
+        var folderPath = (path as NSString).deletingLastPathComponent
+        while true {
+            var folder = stat()
+            guard stat(folderPath, &folder) == 0 else { return .failure(.missing) }
+            guard folder.st_uid == ownerID || folder.st_uid == 0 else { return .failure(.wrongOwner) }
+            guard (folder.st_mode & (S_IWGRP | S_IWOTH)) == 0 else { return .failure(.folderWritableByOthers) }
+            if folderPath == "/" || folderPath.isEmpty { break }
+            folderPath = (folderPath as NSString).deletingLastPathComponent
         }
         return .success(URL(fileURLWithPath: path))
     }

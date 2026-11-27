@@ -2,19 +2,23 @@ public import Foundation
 
 /// Runs lab as a child process: its exact path, the arguments as a list, no shell.
 ///
-/// The environment is inherited unchanged: lab's own guards (for example, `lab ginkgo answer`
+/// The program is checked again right before each run (``LabExecutableLocator/check(_:)``), so a
+/// program replaced after it was located is refused. The environment is inherited unchanged: lab's own guards (for example, `lab ginkgo answer`
 /// refused to an agent) keep seeing who really runs it. A command that does not finish within
 /// `timeout` is terminated.
 public struct ProcessLabCommandRunner: LabCommandRunning {
     private let executable: URL
+    private let locator: LabExecutableLocator?
     private let timeout: Duration
 
     /// Creates a runner.
     /// - Parameters:
     ///   - executable: lab's path, from ``LabExecutableLocator``.
+    ///   - locator: checks the program again before each run; `nil` only in tests of the runner itself.
     ///   - timeout: the longest wait, 120 seconds by default (`lab next` may open a session).
-    public init(executable: URL, timeout: Duration = .seconds(120)) {
+    public init(executable: URL, locator: LabExecutableLocator? = nil, timeout: Duration = .seconds(120)) {
         self.executable = executable
+        self.locator = locator
         self.timeout = timeout
     }
 
@@ -23,6 +27,9 @@ public struct ProcessLabCommandRunner: LabCommandRunning {
     /// - Returns: exit code, stdout and stderr.
     /// - Throws: ``LanesProblem/labUnavailable(_:)`` when lab cannot start or overruns `timeout`.
     public func run(_ command: LabCommand) async throws -> LabCommandOutput {
+        if let locator, case let .failure(reason) = locator.check(executable) {
+            throw LanesProblem.labUnavailable("\(executable.path): \(reason)")
+        }
         let process = Process()
         process.executableURL = executable
         process.arguments = command.arguments

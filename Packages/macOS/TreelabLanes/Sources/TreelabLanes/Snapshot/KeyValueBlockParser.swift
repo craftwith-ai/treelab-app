@@ -19,8 +19,12 @@ public struct KeyValueBlockParser: Sendable {
     public func blocks(in text: String) -> [KeyValueBlock] {
         var blocks: [KeyValueBlock] = []
         var current: [KeyValueBlock.Entry] = []
-        // `\r\n` is one Character in Swift: split on any newline character.
-        for line in text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline) {
+        // Only "\n" ends a line, as lab writes them: another newline character (U+2028, a lone
+        // "\r"…) inside a value must never start a field. Split on scalars, since "\r\n" is one
+        // Character in Swift, then drop the "\r" of a "\r\n" ending.
+        for scalars in text.unicodeScalars.split(separator: "\n", omittingEmptySubsequences: false) {
+            var line = Substring(String(String.UnicodeScalarView(scalars)))
+            if line.unicodeScalars.last == "\r" { line = Substring(String(line.unicodeScalars.dropLast())) }
             if line.isEmpty {
                 if !current.isEmpty { blocks.append(KeyValueBlock(entries: current)) }
                 current = []

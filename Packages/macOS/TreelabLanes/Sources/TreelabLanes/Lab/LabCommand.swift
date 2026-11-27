@@ -9,7 +9,7 @@ public enum LabCommand: Sendable, Equatable {
     /// Reads what a lane asks, word for word (`lab ginkgo question`).
     case question(project: LabName, lane: LabName)
     /// Answers a question box with the user's choices (`lab ginkgo answer … --qid … --q n --choice c`).
-    case answerChoices(project: LabName, lane: LabName, qid: String, choices: [Int: [Int]])
+    case answerChoices(project: LabName, lane: LabName, qid: LabQuestionID, choices: [Int: [Int]])
     /// Answers a lane waiting without a box with the user's text (`lab ginkgo answer … --text`).
     case answerText(project: LabName, lane: LabName, text: String)
     /// Moves the lane to its next step (`lab next`): relaunches a stopped lane.
@@ -30,7 +30,7 @@ public enum LabCommand: Sendable, Equatable {
         case let .question(project, lane):
             return ["ginkgo", "question", project.value, lane.value]
         case let .answerChoices(project, lane, qid, choices):
-            var arguments = ["ginkgo", "answer", project.value, lane.value, "--qid", qid]
+            var arguments = ["ginkgo", "answer", project.value, lane.value, "--qid", qid.value]
             for question in choices.keys.sorted() {
                 arguments += ["--q", String(question)]
                 for choice in choices[question] ?? [] { arguments += ["--choice", String(choice)] }
