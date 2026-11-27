@@ -1,5 +1,5 @@
 public import Foundation
-public import TreelabLanes
+import TreelabLanes
 
 extension AccountModel {
     /// The model wired to the person's lab: found by ``LabExecutableLocator`` before each call,

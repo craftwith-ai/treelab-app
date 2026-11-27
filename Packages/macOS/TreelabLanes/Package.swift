@@ -70,7 +70,7 @@ let package = Package(
         ),
         .testTarget(
             name: "TreelabLanesUITests",
-            dependencies: ["TreelabLanesUI", "TreelabGinkgo", "TreelabLanes"],
+            dependencies: ["TreelabLanesUI", "TreelabGinkgo", "TreelabLanes", "TreelabAccount"],
             swiftSettings: [
                 .swiftLanguageMode(.v6),
                 .enableUpcomingFeature("ExistentialAny"),

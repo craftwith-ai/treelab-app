@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import TreelabLanes
 
 /// The account contract v1 between Treelab and lab (`contrat-compte.md`): how lab's answers are read.

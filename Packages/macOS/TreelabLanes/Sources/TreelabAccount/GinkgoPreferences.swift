@@ -1,4 +1,4 @@
-public import TreelabLanes
+import TreelabLanes
 
 /// When Ginkgo listens (`LISTEN=`, `lab app ginkgo --listen`).
 public enum GinkgoListening: String, Sendable, Equatable, CaseIterable {
