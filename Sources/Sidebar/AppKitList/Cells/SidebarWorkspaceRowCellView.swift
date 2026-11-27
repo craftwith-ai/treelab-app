@@ -5,6 +5,7 @@ import CmuxFoundation
 import CmuxSidebar
 import CmuxWorkspaces
 import SwiftUI
+import TreelabLanesUI
 
 /// Pure-AppKit workspace row cell: renders every TabItemView slot without
 /// SwiftUI hosting. Subviews are created once (dynamic slots use view pools),
@@ -37,6 +38,8 @@ final class SidebarWorkspaceRowTableCellView: NSTableCellView {
     private let compactStatusGlyphView = SidebarCompactStatusGlyphImageView()
     private let titleView = SidebarRowTextView(lines: 1)
     private let cloudImageView = NSImageView()
+    /// Treelab: the project's lane indicators.
+    private let treelabIndicators = TreelabRowIndicatorsView()
     private let trailingBadge = SidebarRowUnreadBadgeView()
     private var trailingSpinner: GPUSpinnerNSView?
     private let closeButton = SidebarHeaderGlyphButton()
@@ -328,6 +331,7 @@ final class SidebarWorkspaceRowTableCellView: NSTableCellView {
             view.imageScaling = .scaleProportionallyDown
             contentContainer.addSubview(view)
         }
+        contentContainer.addSubview(treelabIndicators)
         // The glyph view sets its own scaling mode, shared with the SwiftUI list.
         contentContainer.addSubview(compactStatusGlyphView)
         statusGlyphButton.isHidden = true
@@ -528,6 +532,7 @@ final class SidebarWorkspaceRowTableCellView: NSTableCellView {
         let palette = palette(model)
         let snapshot = model.snapshot
         let settings = model.settings
+        treelabIndicators.update(model: AppDelegate.shared?.treelabLanes, directory: snapshot.finderDirectoryPath)
 
         // Chrome
         applySelectionChrome(model)
@@ -1336,7 +1341,9 @@ final class SidebarWorkspaceRowTableCellView: NSTableCellView {
         let closeHit = max(16, 16 * model.fontScale)
         let closeWidth = max(16, closeHit)
         let trailingSlotActive = !trailingBadge.isHidden || (trailingSpinner?.isHidden == false) || model.canCloseWorkspace
-        let titleMaxX = trailingSlotActive ? (trailing - closeWidth - titleRowSpacing) : trailing
+        let slotMaxX = trailingSlotActive ? (trailing - closeWidth - titleRowSpacing) : trailing
+        let indicatorsWidth = treelabIndicators.place(endingAt: slotMaxX, centerY: firstLineCenter, apply: apply)
+        let titleMaxX = indicatorsWidth > 0 ? slotMaxX - indicatorsWidth - titleRowSpacing : slotMaxX
         let titleWidth = max(10, titleMaxX - x)
         let renameField = renameSession?.field
         let titleHeight = renameField.map { ceil($0.intrinsicContentSize.height) }

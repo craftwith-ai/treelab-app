@@ -5,8 +5,9 @@
 # Computer Use helper, the AppleScript dictionary (.sdef) and an HTML page title.
 #   A. "cmux" naming the app becomes the brand name in English, French, German, Japanese, Arabic,
 #      the keys of rules.json "key_overrides" take their text (the accent is not blue), and a
-#      package key naming cmux that the main table lacks is added to it (upstream calls without
-#      bundle: read the main table), like a main-table key the brand changes that a language lacks;
+#      package key naming cmux (or already naming the brand) that the main table lacks is added to
+#      it (upstream calls without bundle: read the main table), like a main-table key the brand
+#      changes that a language lacks;
 #   B. technical names stay: `code`, quoted commands, cmux.json, cmux-tui, ~/.cmuxterm, paths,
 #      addresses, CMUX_* variables, identifiers, "Usage: cmux", every cli.* key, the GPL line;
 #   C. format specifiers (%@, %1$@, %#@n@) and each file's format and encoding are kept,
@@ -146,6 +147,16 @@ write(os.path.join(sub, "fr.lproj", "Localizable.strings"), {
 write(os.path.join(sub, "de.lproj", "Localizable.strings"), {
     "settings.sub.plain": "Keine Marke hier.",
 }, "xml-utf16")
+# A package written for Treelab (Packages/macOS/TreelabLanes): its English text already names the brand.
+lanes = os.path.join(res, "TreelabLanes_TreelabLanesUI.bundle", "Contents", "Resources")
+write(os.path.join(lanes, "en.lproj", "Localizable.strings"), {
+    "treelab.pkg.version": "Treelab does not know this lab version.",
+    "treelab.pkg.plain": "No name here.",
+}, "binary")
+write(os.path.join(lanes, "fr.lproj", "Localizable.strings"), {
+    "treelab.pkg.version": "Treelab ne connaît pas cette version de lab.",
+    "treelab.pkg.plain": "Aucun nom ici.",
+}, "binary")
 write(os.path.join(app, "Contents", "Library", "cmux Computer Use.app", "Contents", "Resources", "en.lproj", "InfoPlist.strings"), {
     "NSAccessibilityUsageDescription": "cmux Computer Use controls apps only when you ask.",
 }, "openstep")
@@ -196,7 +207,7 @@ else
 fi
 
 rc=0; out="$(brand apply --name Treelab "$APP" 2>&1)" || rc=$?
-[[ "$rc" == 0 ]] && pass "apply rc 0" || { fail "apply rc $rc"; echo "$out" | tail -5 >&2; }
+if [[ "$rc" == 0 ]]; then pass "apply rc 0"; else fail "apply rc $rc"; echo "$out" | tail -5 >&2; fi
 
 # A. The app's name.
 expect_value "$EN" quit "Quit Treelab"
@@ -204,6 +215,7 @@ expect_value "$EN" restart "Restart Treelab."
 expect_value "$EN" possessive "Treelab's browser"
 expect_value "$EN" upper "Install a Treelab sidebar extension"
 expect_value "$EN" banner "[Treelab] Press Enter to reconnect."
+# shellcheck disable=SC1111 # the curly quotes are the expected text
 expect_value "$EN" quotedLabel "“Treelab processes only” accepts only local processes."
 expect_value "$EN" appFile "Move Treelab.app to /Applications and retry."
 expect_value Contents/Resources/fr.lproj/Localizable.strings quit "Quitter Treelab"
@@ -239,6 +251,13 @@ expect_value "$EN" quit "Quit Treelab"
 for missing in settings.sub.plain cli.sub.help; do
   if value "$APP/$EN" "$missing" >/dev/null 2>&1; then fail "$missing copied to the main table"; else pass "$missing not copied"; fi
 done
+
+# A3b. A package key whose English text already names the brand is planned like one naming cmux:
+#      check counts every key naming the app, whether it said cmux or Treelab before the pass.
+expect_value "$EN" treelab.pkg.version "Treelab does not know this lab version."
+expect_value Contents/Resources/fr.lproj/Localizable.strings treelab.pkg.version "Treelab ne connaît pas cette version de lab."
+expect_value Contents/Resources/de.lproj/Localizable.strings treelab.pkg.version "Treelab does not know this lab version."
+if value "$APP/$EN" treelab.pkg.plain >/dev/null 2>&1; then fail "treelab.pkg.plain copied to the main table"; else pass "treelab.pkg.plain not copied"; fi
 
 # A4. Main-table keys the brand changes and a language lacks get the branded English text there:
 #     macOS shows the binary's English default (cmux included) for a missing key, never the en table.
@@ -312,7 +331,7 @@ expect_value "$EN" format "%@ opened in Treelab (%1\$@)"
 expect_value Contents/Resources/fr.lproj/Localizable.strings format "%1\$@ ouvert dans Treelab"
 expect_value Contents/Resources/en.lproj/Localizable.stringsdict windows.count/NSStringLocalizedFormatKey "%#@n@ open in Treelab"
 FORMATS_AFTER="$(for f in "$APP"/Contents/Resources/{en,fr,de,ja,ar}.lproj/Localizable.strings; do format_of "$f"; done)"
-if [[ "$FORMATS_BEFORE" == "$FORMATS_AFTER" ]]; then pass "file formats kept (binary, UTF-16 BOM, old-style)"; else fail "file formats changed: $(echo $FORMATS_BEFORE) -> $(echo $FORMATS_AFTER)"; fi
+if [[ "$FORMATS_BEFORE" == "$FORMATS_AFTER" ]]; then pass "file formats kept (binary, UTF-16 BOM, old-style)"; else fail "file formats changed: $(tr '\n' ' ' <<< "$FORMATS_BEFORE") -> $(tr '\n' ' ' <<< "$FORMATS_AFTER")"; fi
 if [[ "$(head -c 1 "$APP/Contents/Resources/ja.lproj/Localizable.strings")" == '"' ]]; then
   pass "old-style .strings stays old-style"
 else

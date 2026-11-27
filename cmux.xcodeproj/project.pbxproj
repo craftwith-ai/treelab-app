@@ -4376,6 +4376,10 @@
 		F3D022B5E558B2D459B0AF17 /* TreelabCLISocketPathResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9FC9D7AC7DC69DD12470016 /* TreelabCLISocketPathResolverTests.swift */; };
 		29DD20E429949C6098012C6E /* TreelabFeatureFlagsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60F3E6EE24F8C6ED7AE735F6 /* TreelabFeatureFlagsTests.swift */; };
 		7F76AEE3336B1BEB4454B70C /* TreelabHiddenEntriesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501AFB3650856CD470883DD0 /* TreelabHiddenEntriesTests.swift */; };
+		7EE1AB000000000000000A04 /* TreelabLanes in Frameworks */ = {isa = PBXBuildFile; productRef = 7EE1AB000000000000000A02 /* TreelabLanes */; };
+		7EE1AB000000000000000A05 /* TreelabLanes in Frameworks */ = {isa = PBXBuildFile; productRef = 7EE1AB000000000000000A03 /* TreelabLanes */; };
+		7EE1AB000000000000000B04 /* TreelabLanesUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7EE1AB000000000000000B02 /* TreelabLanesUI */; };
+		7EE1AB000000000000000B05 /* TreelabLanesUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7EE1AB000000000000000B03 /* TreelabLanesUI */; };
 		468100000000000000000003 /* TypingHotPathRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 468100000000000000000004 /* TypingHotPathRegressionTests.swift */; };
 		D9A1B2C3D4E5000000000001 /* UITestDiagnosticsWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9A1B2C3D4E5000000000002 /* UITestDiagnosticsWriter.swift */; };
 		234457BD526EDFF5A1AA558C /* UITestFixtureTeamsAuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6B1A593C13D2BAEE34B912 /* UITestFixtureTeamsAuthClient.swift */; };
@@ -9571,6 +9575,8 @@
 				C41EF7BA6B59F227A33EF2FA /* MessagesLabSidebar in Frameworks */,
 				A5001230 /* Sparkle in Frameworks */,
 				F20F85FC5900550685FA33AD /* StackAuth in Frameworks */,
+				7EE1AB000000000000000A04 /* TreelabLanes in Frameworks */,
+				7EE1AB000000000000000B04 /* TreelabLanesUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -9666,6 +9672,8 @@
 				1A0B0C0D0E0F101112132214 /* IrohLib in Frameworks */,
 				C41EF37855F3934FF56E3782 /* MessagesLabHome in Frameworks */,
 				C41EF6F99E75FAD1F939EA6B /* MessagesLabSidebar in Frameworks */,
+				7EE1AB000000000000000A05 /* TreelabLanes in Frameworks */,
+				7EE1AB000000000000000B05 /* TreelabLanesUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -14546,6 +14554,8 @@
 				CDFEED0500000000CDFEED05 /* CmuxUpdaterUI */,
 				CF00F00000000000000000A2 /* CmuxFoundation */,
 				D0F7A0000000000000000002 /* CmuxMemoryPressure */,
+				7EE1AB000000000000000A02 /* TreelabLanes */,
+				7EE1AB000000000000000B02 /* TreelabLanesUI */,
 				C01E00AA00000000000000A2 /* CmuxSyntaxHighlighting */,
 				D0F1A0000000000000000002 /* CmuxFilePreviewCore */,
 				D0F2A0000000000000000002 /* CmuxCloudBannerCore */,
@@ -14705,6 +14715,8 @@
 				D0F3A0000000000000000002 /* CmuxCloudImagePaste */,
 				C4B1E0000000000000000002 /* CmuxMobileHost */,
 				D0F7A0000000000000000003 /* CmuxMemoryPressure */,
+				7EE1AB000000000000000A03 /* TreelabLanes */,
+				7EE1AB000000000000000B03 /* TreelabLanesUI */,
 				C41EFC6ABCCA2CC66615C13F /* CmuxAgentQuestion */,
 				C41EF5588332B5106DFDCF2F /* CmuxHomeCore */,
 				C41EFCB474BA4402CC80BB10 /* CmuxHomeRender */,
@@ -14835,6 +14847,7 @@
 				CDFEED0400000000CDFEED04 /* XCLocalSwiftPackageReference "CmuxUpdaterUI" */,
 				CF00F00000000000000000A1 /* XCLocalSwiftPackageReference "CmuxFoundation" */,
 				D0F7A0000000000000000001 /* XCLocalSwiftPackageReference "CmuxMemoryPressure" */,
+				7EE1AB000000000000000A01 /* XCLocalSwiftPackageReference "TreelabLanes" */,
 				C01E00AA00000000000000A1 /* XCLocalSwiftPackageReference "CmuxSyntaxHighlighting" */,
 				D0F1A0000000000000000001 /* XCLocalSwiftPackageReference "CmuxFilePreviewCore" */,
 				D0F2A0000000000000000001 /* XCLocalSwiftPackageReference "CmuxCloudBannerCore" */,
@@ -20561,6 +20574,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/macOS/CmuxMemoryPressure;
 		};
+		7EE1AB000000000000000A01 /* XCLocalSwiftPackageReference "TreelabLanes" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/macOS/TreelabLanes;
+		};
 		C01E00AA00000000000000A1 /* XCLocalSwiftPackageReference "CmuxSyntaxHighlighting" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Shared/CmuxSyntaxHighlighting;
@@ -20968,10 +20985,30 @@
 			package = D0F7A0000000000000000001 /* XCLocalSwiftPackageReference "CmuxMemoryPressure" */;
 			productName = CmuxMemoryPressure;
 		};
+		7EE1AB000000000000000A02 /* TreelabLanes */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7EE1AB000000000000000A01 /* XCLocalSwiftPackageReference "TreelabLanes" */;
+			productName = TreelabLanes;
+		};
+		7EE1AB000000000000000B02 /* TreelabLanesUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7EE1AB000000000000000A01 /* XCLocalSwiftPackageReference "TreelabLanes" */;
+			productName = TreelabLanesUI;
+		};
 		D0F7A0000000000000000003 /* CmuxMemoryPressure */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D0F7A0000000000000000001 /* XCLocalSwiftPackageReference "CmuxMemoryPressure" */;
 			productName = CmuxMemoryPressure;
+		};
+		7EE1AB000000000000000A03 /* TreelabLanes */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7EE1AB000000000000000A01 /* XCLocalSwiftPackageReference "TreelabLanes" */;
+			productName = TreelabLanes;
+		};
+		7EE1AB000000000000000B03 /* TreelabLanesUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7EE1AB000000000000000A01 /* XCLocalSwiftPackageReference "TreelabLanes" */;
+			productName = TreelabLanesUI;
 		};
 		C01E00AA00000000000000A2 /* CmuxSyntaxHighlighting */ = {
 			isa = XCSwiftPackageProductDependency;

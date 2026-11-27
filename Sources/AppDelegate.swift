@@ -39,6 +39,7 @@ import Combine
 import ObjectiveC.runtime
 import Darwin
 import CmuxFoundation
+import TreelabLanes
 #if canImport(CmuxSentryReporting)
 import CmuxSentryReporting
 #endif
@@ -565,6 +566,11 @@ final class CmuxMainThreadTurnProfiler {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate, NSMenuItemValidation, NSMenuDelegate, CmuxConfigStoreReloadEnvironment {
     nonisolated(unsafe) static var shared: AppDelegate?
+    /// Treelab: the lanes lab writes for the app, read without a timer; actions go through lab.
+    /// `-TreelabLanesDemo <folder>` at launch shows an invented folder instead and runs no program.
+    lazy var treelabLanes: LanesModel = UserDefaults.standard.string(forKey: "TreelabLanesDemo")
+        .map { LanesModel.demo(folder: URL(fileURLWithPath: $0), readerPID: getpid()) }
+        ?? LanesModel.live(home: FileManager.default.homeDirectoryForCurrentUser, readerPID: getpid())
     let cloudBannerDismissalStore: CloudBannerDismissalStore
     /// Composition-root owner for the persisted per-SSH-machine clipboard-write policy.
     let sshClipboardWriteTrustStore: SSHClipboardWriteTrustStore
@@ -1699,6 +1705,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // menu mounts: it is lazy, and its consumers only observe its
         // notification, so nothing else would bring it up (#10866).
         BrowserAvailabilityMonitor.shared.activate()
+        startTreelabLanes()
         startChiefIfEnabled()
         // Composition root for surfaces: this Mac's panes and every cloud machine's
         // cmux-tui session feed one catalog, and the sidebar, drag/drop, socket and CLI all
@@ -15357,6 +15364,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         let paletteSelectionDelta = contextAwareCommandPaletteSelectionDelta(for: event)
 
+        // Treelab's Feed: plain 1–9 pick a choice, unless the user types in the answer field.
+        if treelabLanes.isFeedPresented, let feedWindow = commandPaletteShortcutWindow,
+           !(feedWindow.firstResponder is NSText),
+           let digit = LanesModel.choiceDigit(
+               event.charactersIgnoringModifiers,
+               keyCode: event.keyCode,
+               withModifiers: !event.modifierFlags.intersection([.command, .control, .option]).isEmpty
+           ),
+           treelabLanes.pressDigit(digit) {
+            return true
+        }
+
         if shouldRouteCommandPaletteSelectionNavigation(
             delta: paletteSelectionDelta,
             isInteractive: commandPaletteInteractiveInTargetWindow,
@@ -21042,5 +21061,30 @@ extension NSWindow {
         event: NSEvent?
     ) -> CmuxWebView? {
         cmuxOwningWebView(for: responder, in: window, event: event)
+    }
+}
+
+extension AppDelegate {
+    /// Treelab: starts following lab's lanes and lets the Feed open a lane's workspace itself.
+    func startTreelabLanes() {
+        // The test host never declares itself a reader nor runs the user's lab.
+        guard !isRunningUnderXCTestCached else { return }
+        treelabLanes.setOpenInApp { [weak self] project, lane in
+            guard let self else { return false }
+            let worktree = (project.root as NSString).appendingPathComponent(".worktrees/\(lane.record.lane)")
+            for context in self.mainWindowContexts.values {
+                let match = context.tabManager.tabs.first { workspace in
+                    let directory = workspace.currentDirectory
+                    return directory == worktree || directory.hasPrefix(worktree + "/")
+                }
+                if let match {
+                    context.window?.makeKeyAndOrderFront(nil)
+                    context.tabManager.selectWorkspace(match)
+                    return true
+                }
+            }
+            return false
+        }
+        treelabLanes.start()
     }
 }

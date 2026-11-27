@@ -25,6 +25,8 @@ import CmuxSwiftRender
 import CmuxSwiftRenderUI
 import CmuxUpdater
 import CmuxUpdaterUI
+import TreelabLanes
+import TreelabLanesUI
 import ImageIO
 import Observation
 import CmuxProductAnalytics
@@ -137,6 +139,8 @@ private final class WindowCommandPaletteOverlayController: NSObject {
     private var focusLockTimer: DispatchSourceTimer?
     private let scheduledFocusAction = MainActorDeferredActionScheduler()
     private var isPaletteVisible = false
+    /// Treelab: `false` while the Feed is shown, whose keys 1–9 must reach the Feed itself.
+    private var locksTextInputFocus = true
     private var hasMountedPaletteRootView = false
 
     init(window: NSWindow) {
@@ -445,6 +449,15 @@ private final class WindowCommandPaletteOverlayController: NSObject {
             stopFocusLockTimer()
             return
         }
+        guard locksTextInputFocus else {
+            // Treelab's Feed: focus goes to the Feed once (typing must not reach the terminal
+            // behind it), then stays where the user puts it, the answer field included.
+            stopFocusLockTimer()
+            if window.isKeyWindow, !isPaletteResponder(window.firstResponder) {
+                _ = window.makeFirstResponder(hostingView)
+            }
+            return
+        }
 
         guard window.isKeyWindow else {
 #if DEBUG
@@ -517,9 +530,11 @@ private final class WindowCommandPaletteOverlayController: NSObject {
 
     func update(
         isVisible: Bool,
+        locksTextInputFocus: Bool = true,
         onDismiss: @MainActor @escaping (CommandPaletteInteractionDismissal) -> Void = { _ in },
         makeRootView: @MainActor () -> AnyView = { AnyView(EmptyView()) }
     ) {
+        self.locksTextInputFocus = locksTextInputFocus
         let wasVisible = isPaletteVisible
         if !isVisible {
             guard wasVisible || hasMountedPaletteRootView || !containerView.isHidden else { return }
@@ -1049,6 +1064,15 @@ struct ContentView: View {
 
     private var isCommandPalettePresented: Bool {
         commandPaletteOverlayState.isCommandPalettePresented
+    }
+
+    private var isTreelabFeedPresented: Bool {
+        commandPaletteOverlayState == .treelabFeed
+    }
+
+    /// Treelab's lanes, owned by the composition root.
+    private var treelabLanes: LanesModel? {
+        AppDelegate.shared?.treelabLanes
     }
 
     private var isAgentInboxPresented: Bool {
@@ -3170,6 +3194,20 @@ struct ContentView: View {
             openAgentInbox()
         })
 
+        view = AnyView(view.onReceive(NotificationCenter.default.publisher(for: .treelabFeedRequested)) { notification in
+            guard Self.shouldHandleCommandPaletteRequest(
+                observedWindow: observedWindow,
+                requestedWindow: notification.object as? NSWindow,
+                keyWindow: NSApp.keyWindow,
+                mainWindow: NSApp.mainWindow
+            ) else { return }
+            openTreelabFeed()
+        })
+
+        view = AnyView(view.onChange(of: treelabLanes?.isFeedPresented ?? false) { _, presented in
+            if !presented, isTreelabFeedPresented { commandPaletteOverlayState = .closed }
+        })
+
         view = AnyView(view.onReceive(NotificationCenter.default.publisher(for: .savedLayoutSaveRequested)) { notification in
             if Self.shouldHandleSavedLayoutSaveRequest(observedWindow: observedWindow, requestedWindow: notification.object as? NSWindow, keyWindow: NSApp.keyWindow, mainWindow: NSApp.mainWindow) {
                 presentSavedLayoutSavePrompt()
@@ -3202,6 +3240,8 @@ struct ContentView: View {
             ) else { return }
             if isAgentInboxPresented {
                 agentInboxSubmitRequest &+= 1
+            } else if isTreelabFeedPresented {
+                Task { await treelabLanes?.submit() }
             } else {
                 handleCommandPaletteSubmitRequest()
             }
@@ -3218,6 +3258,8 @@ struct ContentView: View {
             ) else { return }
             if isAgentInboxPresented {
                 dismissAgentInbox()
+            } else if isTreelabFeedPresented {
+                dismissTreelabFeed()
             } else {
                 dismissCommandPalette()
             }
@@ -3288,6 +3330,8 @@ struct ContentView: View {
             guard let delta = notification.userInfo?["delta"] as? Int, delta != 0 else { return }
             if isAgentInboxPresented {
                 agentInboxMoveRequest &+= delta
+            } else if isTreelabFeedPresented {
+                treelabLanes?.moveSelection(delta)
             } else {
                 guard case .commands = commandPaletteMode else { return }
                 moveCommandPaletteSelection(by: delta)
@@ -3335,9 +3379,12 @@ struct ContentView: View {
             let overlayController = commandPaletteWindowOverlayController(for: window)
             overlayController.update(
                 isVisible: isCommandPalettePresented,
+                locksTextInputFocus: !isTreelabFeedPresented,
                 onDismiss: { dismissal in
                     if isAgentInboxPresented {
                         dismissAgentInbox()
+                    } else if isTreelabFeedPresented {
+                        dismissTreelabFeed()
                     } else {
                         dismissCommandPalette(for: dismissal, in: window)
                     }
@@ -3613,9 +3660,12 @@ struct ContentView: View {
             commandPaletteWindowOverlayController(for: window)
                 .update(
                     isVisible: isCommandPalettePresented,
+                    locksTextInputFocus: !isTreelabFeedPresented,
                     onDismiss: { dismissal in
                         if isAgentInboxPresented {
                             dismissAgentInbox()
+                        } else if isTreelabFeedPresented {
+                            dismissTreelabFeed()
                         } else {
                             dismissCommandPalette(for: dismissal, in: window)
                         }
@@ -3980,7 +4030,20 @@ struct ContentView: View {
         workspaceSwitchPortalSignalRouter.clearSources()
     }
 
+    /// The palette's overlay, or Treelab's Feed over the whole window.
     private var commandPaletteOverlay: some View {
+        Group {
+            if isTreelabFeedPresented, let treelabLanes {
+                TreelabFeedView(model: treelabLanes, onClose: dismissTreelabFeed)
+                    .background(CommandPalettePanelHitRegion())
+                    .zIndex(2000)
+            } else {
+                commandPaletteDialogOverlay
+            }
+        }
+    }
+
+    private var commandPaletteDialogOverlay: some View {
         GeometryReader { proxy in
             let maxAllowedWidth = max(340, proxy.size.width - 260)
             let targetWidth = isAgentInboxPresented
@@ -10296,6 +10359,18 @@ struct ContentView: View {
         agentInboxItems = []
     }
 
+    /// Treelab: shows the Feed over this window, on the oldest request.
+    private func openTreelabFeed() {
+        guard let treelabLanes else { return }
+        treelabLanes.openFeed()
+        commandPaletteOverlayState = .treelabFeed
+    }
+
+    private func dismissTreelabFeed() {
+        commandPaletteOverlayState = .closed
+        treelabLanes?.closeFeed()
+    }
+
     private func openCommandPaletteSwitcher() {
         invalidateCommandPaletteCloudWorkspaceTargets()
         handleCommandPaletteListRequest(scope: .switcher)
@@ -12059,6 +12134,13 @@ struct VerticalTabsSidebar: View, Equatable {
                     onSendFeedback: onSendFeedback
                 )
                 .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .overlay(alignment: .top) {
+            // Treelab: the lanes counter, under the titlebar; it opens the Feed in this window.
+            if let lanes = AppDelegate.shared?.treelabLanes {
+                LaneCounterCard(model: lanes)
+                    .padding(.top, MinimalModeChromeMetrics.titlebarHeight + 2)
             }
         }
         .accessibilityIdentifier("Sidebar")

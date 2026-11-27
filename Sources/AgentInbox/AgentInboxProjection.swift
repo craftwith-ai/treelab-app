@@ -38,6 +38,8 @@ enum CommandPaletteOverlayState: Equatable, Sendable {
     case closed
     case palette
     case agentInbox
+    /// Treelab's Feed, full window.
+    case treelabFeed
 
     var isCommandPalettePresented: Bool {
         self != .closed

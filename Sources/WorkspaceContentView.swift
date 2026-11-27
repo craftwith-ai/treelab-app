@@ -6,6 +6,7 @@ import CmuxFoundation
 import Bonsplit
 import CmuxWorkspaces
 import CmuxTerminal
+import TreelabLanesUI
 
 private enum WorkspaceTitlebarInteractionMetrics {
     // Keep in sync with the minimal-mode titlebar strip so the monitor only
@@ -473,6 +474,12 @@ struct WorkspaceContentView: View {
                 )
             } else {
                 bonsplitView
+            }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            // Treelab: the open lane's banner; it takes its own space (terminals draw above SwiftUI overlays).
+            if let lanes = AppDelegate.shared?.treelabLanes {
+                LaneBanner(model: lanes, directory: workspace.currentDirectory)
             }
         }
         .overlay {
