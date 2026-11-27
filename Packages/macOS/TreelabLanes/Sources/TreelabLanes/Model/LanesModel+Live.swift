@@ -29,4 +29,23 @@ extension LanesModel {
         )
         return LanesModel(service: service, runner: runner)
     }
+
+    /// The model on an invented demo folder (`app-snapshot/`, `questions/`): reads like the real
+    /// one, runs no program (``DemoLabRunner``), refuses every action.
+    /// - Parameters:
+    ///   - folder: the demo folder.
+    ///   - readerPID: Treelab's process id.
+    /// - Returns: a model, not started.
+    public static func demo(folder: URL, readerPID: Int32) -> LanesModel {
+        let runner = DemoLabRunner(folder: folder)
+        let service = LanesService(
+            reader: SnapshotFolderReader(folder: folder.appendingPathComponent("app-snapshot")),
+            runner: runner,
+            readerPID: readerPID,
+            files: FSEventsFileWatcher(),
+            entries: KernelDirectoryWatcher(),
+            exits: KernelProcessExitWatcher()
+        )
+        return LanesModel(service: service, runner: runner)
+    }
 }

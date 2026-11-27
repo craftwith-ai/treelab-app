@@ -28,6 +28,8 @@ public final class LanesModel {
     public private(set) var notice: LanesNotice?
     /// Lanes with an action under way.
     public private(set) var busyLaneIDs: Set<String> = []
+    /// The answer being typed in the Feed, sent by Return (``submitDraft()``).
+    public var draftAnswer = ""
 
     private let service: LanesService
     private let runner: (any LabCommandRunning)?
@@ -102,6 +104,7 @@ public final class LanesModel {
         guard selectedRequestID != id else { return }
         selectedRequestID = id
         notice = nil
+        draftAnswer = ""
         Task { await readQuestion() }
     }
 
@@ -149,6 +152,12 @@ public final class LanesModel {
         guard !trimmed.isEmpty, let lane = selectedRequest,
               let project = LabName(lane.record.project), let laneName = LabName(lane.record.lane) else { return }
         await perform(.answerText(project: project, lane: laneName, text: trimmed), for: lane, success: .sent(lane.id))
+    }
+
+    /// Sends ``draftAnswer`` to the selected lane, then clears it once lab took it.
+    public func submitDraft() async {
+        await answer(text: draftAnswer)
+        if case .sent = notice { draftAnswer = "" }
     }
 
     /// Relaunches a stopped lane (`lab next`).
@@ -206,6 +215,7 @@ public final class LanesModel {
         if isFeedPresented, let selected = selectedRequestID, !requests.contains(where: { $0.id == selected }) {
             // The answered request left the queue: show the next one.
             selectedRequestID = requests.first?.id
+            draftAnswer = ""
             Task { await readQuestion() }
         }
     }

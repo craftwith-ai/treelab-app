@@ -6,6 +6,7 @@ public import TreelabLanes
 /// the projects' indicators.
 public struct LaneCounterCard: View {
     private let model: LanesModel
+    private let onOpen: (() -> Void)?
     private let palette = HUDPalette()
     private let text = LanesText()
 
@@ -13,15 +14,18 @@ public struct LaneCounterCard: View {
     public static let height: CGFloat = 92
 
     /// Creates the card.
-    /// - Parameter model: the lanes model.
-    public init(model: LanesModel) {
+    /// - Parameters:
+    ///   - model: the lanes model.
+    ///   - onOpen: opens the Feed in the card's window; ``LanesModel/openFeed()`` when `nil`.
+    public init(model: LanesModel, onOpen: (() -> Void)? = nil) {
         self.model = model
+        self.onOpen = onOpen
     }
 
     public var body: some View {
         let total = model.state.snapshot.total
         Button {
-            model.openFeed()
+            if let onOpen { onOpen() } else { model.openFeed() }
         } label: {
             HStack(spacing: 12) {
                 gauge(total)

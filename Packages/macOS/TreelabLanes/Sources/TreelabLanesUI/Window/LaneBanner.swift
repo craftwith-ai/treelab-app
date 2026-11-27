@@ -6,6 +6,7 @@ public import TreelabLanes
 public struct LaneBanner: View {
     private let model: LanesModel
     private let directory: String?
+    private let onOpenFeed: (() -> Void)?
     private let palette = HUDPalette()
     private let text = LanesText()
 
@@ -16,9 +17,11 @@ public struct LaneBanner: View {
     /// - Parameters:
     ///   - model: the lanes model.
     ///   - directory: the workspace's current folder.
-    public init(model: LanesModel, directory: String?) {
+    ///   - onOpenFeed: opens the Feed in the banner's window; ``LanesModel/openFeed()`` when `nil`.
+    public init(model: LanesModel, directory: String?, onOpenFeed: (() -> Void)? = nil) {
         self.model = model
         self.directory = directory
+        self.onOpenFeed = onOpenFeed
     }
 
     public var body: some View {
@@ -47,7 +50,7 @@ public struct LaneBanner: View {
                 if lane.status == .waitingForYou {
                     Button(text.openFeed) {
                         model.select(lane.id)
-                        model.openFeed()
+                        if let onOpenFeed { onOpenFeed() } else { model.openFeed() }
                     }
                     .buttonStyle(.plain)
                     .font(.system(size: 11, weight: .semibold))

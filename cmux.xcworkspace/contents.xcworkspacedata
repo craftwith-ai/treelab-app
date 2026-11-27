@@ -354,6 +354,9 @@
       <FileRef
          location = "group:CmuxWorkspaces">
       </FileRef>
+      <FileRef
+         location = "group:TreelabLanes">
+      </FileRef>
    </Group>
    <Group
       location = "container:Examples"

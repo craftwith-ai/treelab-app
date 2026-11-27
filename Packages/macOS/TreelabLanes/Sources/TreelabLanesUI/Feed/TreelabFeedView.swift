@@ -68,6 +68,7 @@ struct FeedHeader: View {
             }
             .buttonStyle(.plain)
             .keyboardShortcut(.cancelAction)
+            .accessibilityLabel(text.back)
             Text(verbatim: "FEED").font(.system(size: 15, weight: .bold)).tracking(2.5)
             Text(verbatim: "\(text.lanes(laneCount)) · \(text.projects(snapshot.projects.count))")
                 .font(.system(size: 11)).foregroundStyle(palette.textSecondary)

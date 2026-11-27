@@ -182,3 +182,21 @@ struct LabVersionGateTests {
         #expect(throws: LanesProblem.unknownLabVersion("abc")) { try LabVersionGate().check("abc") }
     }
 }
+
+@Suite("Demo mode runs no program")
+struct DemoLabRunnerTests {
+    @Test("questions come from the demo folder; every action is refused; nothing is executed")
+    func demo() async throws {
+        let tmp = try TemporaryFolder()
+        try tmp.write("questions/demo/api", "WAITS=box\nQID=q-1\nQUESTION_1=Go?\nOPTION_1_1=Yes\n")
+        let runner = DemoLabRunner(folder: tmp.url)
+        let p = try #require(LabName("demo")), l = try #require(LabName("api"))
+        #expect(try await runner.run(.question(project: p, lane: l)).standardOutput.hasPrefix("WAITS=box"))
+        #expect(try await runner.run(.question(project: p, lane: try #require(LabName("web")))).standardOutput == "WAITS=none\n")
+        #expect(try await runner.run(.snapshot(readerPID: 1, project: nil, lane: nil)).status == 0)
+        for command in [LabCommand.next(project: p, lane: l), .focus(project: p, lane: l), .answerText(project: p, lane: l, text: "x")] {
+            let output = try await runner.run(command)
+            #expect(output.status == 1 && output.refusal == "demo: nothing is sent")
+        }
+    }
+}

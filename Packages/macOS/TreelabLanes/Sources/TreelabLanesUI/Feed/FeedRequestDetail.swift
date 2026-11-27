@@ -5,9 +5,9 @@ import TreelabLanes
 /// the numbered choices (keys 1 to 9), a free answer, "Open the lane", and the outcome.
 struct FeedRequestDetail: View {
     @Bindable var model: LanesModel
-    @State private var answerText = ""
     @State private var picks: [Int: Set<Int>] = [:]
     @FocusState private var answerFocused: Bool
+    @FocusState private var detailFocused: Bool
     private let palette = HUDPalette()
     private let text = LanesText()
 
@@ -34,7 +34,11 @@ struct FeedRequestDetail: View {
             .frame(maxWidth: .infinity)
         }
         .background(palette.background)
-        .onChange(of: model.selectedRequestID) { picks = [:]; answerText = "" }
+        .focusable()
+        .focusEffectDisabled()
+        .focused($detailFocused)
+        .onAppear { detailFocused = true }
+        .onChange(of: model.selectedRequestID) { picks = [:] }
         .onKeyPress(characters: .decimalDigits) { press in
             guard !answerFocused, let digit = Int(press.characters), digit > 0 else { return .ignored }
             return choose(digit) ? .handled : .ignored
@@ -139,16 +143,15 @@ struct FeedRequestDetail: View {
 
     private func answerField(_ request: ClassifiedLane) -> some View {
         HStack(spacing: 8) {
-            TextField(text.answerPlaceholder, text: $answerText, axis: .vertical)
+            TextField(text.answerPlaceholder, text: $model.draftAnswer)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13))
-                .lineLimit(1...4)
                 .focused($answerFocused)
                 .onSubmit(sendText)
                 .padding(10)
                 .background(palette.card, in: RoundedRectangle(cornerRadius: 4))
                 .overlay(RoundedRectangle(cornerRadius: 4).stroke(palette.lineBright))
-            actionButton(text.send, key: "↵", prominent: false, disabled: answerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isBusy(request), action: sendText)
+            actionButton(text.send, key: "↵", prominent: false, disabled: model.draftAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isBusy(request), action: sendText)
         }
     }
 
@@ -192,12 +195,7 @@ struct FeedRequestDetail: View {
     }
 
     private func sendText() {
-        let typed = answerText
-        guard !typed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        Task {
-            await model.answer(text: typed)
-            if case .sent = model.notice { answerText = "" }
-        }
+        Task { await model.submitDraft() }
     }
 
     private func toggle(_ item: LabQuestion.Item, _ option: Int) {

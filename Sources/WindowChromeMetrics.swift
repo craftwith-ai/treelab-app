@@ -1,3 +1,4 @@
+import TreelabLanesUI
 import CmuxFoundation
 import CoreGraphics
 
@@ -87,7 +88,8 @@ enum SidebarWorkspaceListMetrics {
     static let homeBackRowBottomGap: CGFloat = 4
 
     /// Home uses the ordinary workspace list; no overlay band is reserved.
-    static let firstRowTopOffset: CGFloat = MinimalModeChromeMetrics.titlebarHeight + 2
+    /// Treelab: the lanes counter card sits between the titlebar and the first row.
+    static let firstRowTopOffset: CGFloat = MinimalModeChromeMetrics.titlebarHeight + 2 + LaneCounterCard.height
     static let topScrimClearHeight: CGFloat = 0
     static let rowVerticalPadding: CGFloat = 8
     static let rowOuterHorizontalPadding: CGFloat = 6
