@@ -23,9 +23,10 @@ public struct AccountBarEntry: View {
         sidebarWidth - 2 * 8 - 2 * 12 - 20 - 10 - 10 - 13
     }
 
-    /// The second line as the entry shows it.
+    /// The second line as the entry shows it: the separator "·" held to the word before it by a
+    /// no-break space, so a line never opens on it ("Essai gratuit ·" then "9 jours restants").
     nonisolated static func shownLine(_ line: String) -> String {
-        line
+        line.replacingOccurrences(of: #"\s+·"#, with: "\u{00A0}·", options: .regularExpression)
     }
 
     /// Creates the entry.

@@ -60,7 +60,7 @@ import Testing
             let localizations = (entry as? [String: Any])?["localizations"] as? [String: Any] ?? [:]
             for (language, node) in localizations {
                 for value in Self.values(node) {
-                    let text = value.replacingOccurrences(of: "%lld", with: "14")
+                    let text = AccountBarEntry.shownLine(value.replacingOccurrences(of: "%lld", with: "14"))
                     let lines = Self.linesNeeded(text, width: width)
                     if lines > AccountBarEntry.subtitleLineLimit { cut.append("\(language) \(key): \(text) (\(lines) lines)") }
                 }

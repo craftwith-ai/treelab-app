@@ -511,8 +511,9 @@ private struct ListeningCard: View {
 
 /// GINKGO · WHEN IT SPEAKS: always, in a conversation or never; quiet hours.
 struct SpeechCard: View {
-    /// Speech options on one row of the card.
-    nonisolated static let optionsPerRow = 3
+    /// Speech options on one row of the card: one, like the listening modes (three side by side
+    /// put "En conversation" on two lines in a third of the card).
+    nonisolated static let optionsPerRow = 1
 
     /// Width left to an option's name in the Privacy section of a settings window `windowWidth`
     /// points wide: the navigation and its divider, the page's paddings, the second of two columns,
