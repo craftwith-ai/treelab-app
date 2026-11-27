@@ -22,12 +22,19 @@ final class FakeGinkgo: @unchecked Sendable {
     private var connections = 0
     private var seq = 0
 
-    init() throws {
+    /// - Parameter subfolder: a private folder under the temporary one that holds `app.sock`
+    ///   (`"ginkgo"` gives the demo layout `<folder>/ginkgo/app.sock`); none: `<folder>/app.sock`.
+    init(subfolder: String? = nil) throws {
         var template = Array("/tmp/tlgk.XXXXXX".utf8CString)
         guard let made = mkdtemp(&template) else { throw CocoaError(.fileWriteUnknown) }
         folder = String(cString: made)
         chmod(folder, 0o700)
-        path = folder + "/app.sock"
+        var parent = folder
+        if let subfolder {
+            parent += "/" + subfolder
+            guard mkdir(parent, 0o700) == 0 else { throw CocoaError(.fileWriteUnknown) }
+        }
+        path = parent + "/app.sock"
         listener = socket(AF_UNIX, SOCK_STREAM, 0)
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
@@ -56,6 +63,8 @@ final class FakeGinkgo: @unchecked Sendable {
         if client >= 0 { close(client) }
         close(listener)
         unlink(path)
+        let parent = (path as NSString).deletingLastPathComponent
+        if parent != folder { rmdir(parent) }
         rmdir(folder)
     }
 

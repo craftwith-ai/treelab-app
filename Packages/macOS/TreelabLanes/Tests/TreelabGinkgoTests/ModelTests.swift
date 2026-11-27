@@ -328,6 +328,24 @@ struct ModelTests {
         #expect(fake.ops == ["hello"])
     }
 
+    @Test("demo model: `<folder>/ginkgo/app.sock`; reduced motion forced by the demo holds the levels back",
+          arguments: [false, true])
+    func demoReducedMotion(forced: Bool) async throws {
+        let fake = try FakeGinkgo(subfolder: "ginkgo")
+        let ginkgo = GinkgoModel.demo(folder: URL(fileURLWithPath: fake.folder), clientVersion: "1.0",
+                                      focus: { LabName("treelab-app") }, reduceMotion: forced)
+        ginkgo.start()
+        fake.greet(state: "listening", mic: true)
+        #expect(await eventually { ginkgo.isConversationOpen })
+        ginkgo.setScreenVisible(true)
+        if forced {
+            try await Task.sleep(for: .milliseconds(100))
+            #expect(fake.ops == ["hello"])
+        } else {
+            #expect(await eventually { fake.ops == ["hello", "subscribe"] })
+        }
+    }
+
     @Test("Ginkgo talks about a lane: the Feed is told, once per lane")
     func about() async throws {
         let fake = try FakeGinkgo()

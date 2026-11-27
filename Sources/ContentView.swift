@@ -3416,7 +3416,10 @@ struct ContentView: View {
                     } else if isTreelabFeedPresented {
                         dismissTreelabFeed()
                     } else if isTreelabGinkgoPresented {
-                        treelabGinkgo?.dismissScreen()
+                        // Treelab: the voice screen stays while the app is in the background or a
+                        // menu is open (its levels stop while the window is hidden); only a click
+                        // outside it leaves it, and the conversation goes on.
+                        if case .pointer = dismissal { treelabGinkgo?.dismissScreen() }
                     } else {
                         dismissCommandPalette(for: dismissal, in: window)
                     }
@@ -3699,7 +3702,10 @@ struct ContentView: View {
                         } else if isTreelabFeedPresented {
                             dismissTreelabFeed()
                         } else if isTreelabGinkgoPresented {
-                            treelabGinkgo?.dismissScreen()
+                            // Treelab: the voice screen stays while the app is in the background or a
+                            // menu is open (its levels stop while the window is hidden); only a click
+                            // outside it leaves it, and the conversation goes on.
+                            if case .pointer = dismissal { treelabGinkgo?.dismissScreen() }
                         } else {
                             dismissCommandPalette(for: dismissal, in: window)
                         }

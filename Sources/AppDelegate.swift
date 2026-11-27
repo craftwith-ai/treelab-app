@@ -577,8 +577,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     lazy var treelabGinkgo: GinkgoModel = {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
         let focus: @MainActor () -> LabName? = { [weak self] in self?.treelabGinkgoFocus() }
+        // `-TreelabGinkgoDemoReduceMotion YES` shows the still heart without touching the Mac's setting.
+        let demoReduceMotion = UserDefaults.standard.bool(forKey: "TreelabGinkgoDemoReduceMotion")
         return UserDefaults.standard.string(forKey: "TreelabGinkgoDemo")
-            .map { GinkgoModel.demo(folder: URL(fileURLWithPath: $0), clientVersion: version, focus: focus) }
+            .map { GinkgoModel.demo(folder: URL(fileURLWithPath: $0), clientVersion: version, focus: focus, reduceMotion: demoReduceMotion) }
             ?? GinkgoModel.live(home: FileManager.default.homeDirectoryForCurrentUser, clientVersion: version, focus: focus)
     }()
     let cloudBannerDismissalStore: CloudBannerDismissalStore

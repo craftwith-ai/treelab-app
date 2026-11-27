@@ -28,8 +28,15 @@ extension GinkgoModel {
     ///   - folder: the demo folder.
     ///   - clientVersion: Treelab's version.
     ///   - focus: the project of the lane shown.
+    ///   - reduceMotion: `true` holds the levels back as the Mac's "Reduce motion" does, so the
+    ///     still heart can be seen without changing the user's own setting.
     /// - Returns: a model, not started.
-    public static func demo(folder: URL, clientVersion: String, focus: @escaping @MainActor () -> LabName?) -> GinkgoModel {
+    public static func demo(
+        folder: URL,
+        clientVersion: String,
+        focus: @escaping @MainActor () -> LabName?,
+        reduceMotion: Bool = false
+    ) -> GinkgoModel {
         GinkgoModel(
             runner: DemoLabRunner(folder: folder),
             location: GinkgoSocketLocation(path: folder.appendingPathComponent("ginkgo/app.sock").path),
@@ -37,7 +44,7 @@ extension GinkgoModel {
             defaults: UserDefaults(suiteName: "sh.treelab.ginkgo.demo") ?? .standard,
             clientVersion: clientVersion,
             focus: focus,
-            reduceMotion: { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+            reduceMotion: { reduceMotion || NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
         )
     }
 }

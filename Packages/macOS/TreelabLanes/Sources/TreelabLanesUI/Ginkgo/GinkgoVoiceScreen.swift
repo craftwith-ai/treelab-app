@@ -12,6 +12,8 @@ public struct GinkgoVoiceScreen: View {
     private let palette = HUDPalette()
     private let text = GinkgoText()
     @State private var host = HostWindow()
+    /// The screen holds the keyboard focus, like the Feed: without it Escape never reaches it.
+    @FocusState private var focused: Bool
 
     /// Creates the screen.
     /// - Parameters:
@@ -41,6 +43,10 @@ public struct GinkgoVoiceScreen: View {
                 }
                 .padding(.top, 20).padding(.horizontal, 28).padding(.bottom, 24)
             }
+            .focusable()
+            .focusEffectDisabled()
+            .focused($focused)
+            .onAppear { focused = true }
         }
         .background(palette.background)
         .foregroundStyle(palette.text)
@@ -282,18 +288,23 @@ struct GinkgoConversationCard: View {
                 Text(text.conversationEmpty).font(.system(size: 13)).foregroundStyle(palette.textSecondary)
                 Spacer(minLength: 0)
             } else {
-                ScrollViewReader { reader in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 12) {
-                            ForEach(session.lines, id: \.id) { line in
-                                GinkgoLineRow(line: line, size: size).id(line.id)
+                // A plain stack (at most `GinkgoSession.maxLines`) has exact heights, so the bottom
+                // anchor shows the latest line; at least as tall as the card and aligned to its top,
+                // a short conversation starts at the top instead of sinking to the bottom.
+                GeometryReader { viewport in
+                    ScrollViewReader { reader in
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 12) {
+                                ForEach(session.lines, id: \.id) { line in
+                                    GinkgoLineRow(line: line, size: size).id(line.id)
+                                }
                             }
+                            .frame(maxWidth: .infinity, minHeight: viewport.size.height, alignment: .topLeading)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .defaultScrollAnchor(.bottom)
-                    .onChange(of: session.lines.last) { _, last in
-                        if let last { reader.scrollTo(last.id, anchor: .bottom) }
+                        .defaultScrollAnchor(.bottom)
+                        .onChange(of: session.lines.last) { _, last in
+                            if let last { reader.scrollTo(last.id, anchor: .bottom) }
+                        }
                     }
                 }
             }
@@ -476,6 +487,8 @@ struct GinkgoScreenFooter: View {
                 .toggleStyle(.switch)
                 .controlSize(.small)
                 .tint(palette.cyan)
+                // The switch itself carries its name: VoiceOver otherwise reads a bare "0".
+                .accessibilityLabel(text.keepActive)
                 Text(model.keepActive ? text.keepActiveOn : text.keepActiveOff)
                     .font(.system(size: 12)).foregroundStyle(palette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
