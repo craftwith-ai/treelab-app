@@ -110,6 +110,8 @@ struct KeyCap: View {
     var body: some View {
         Text(verbatim: label)
             .font(.system(size: 10, weight: .semibold, design: .monospaced))
+            .lineLimit(1)
+            .fixedSize()
             .foregroundStyle(HUDPalette().textSecondary)
             .padding(.horizontal, 5).padding(.vertical, 1)
             .overlay(RoundedRectangle(cornerRadius: 3).stroke(HUDPalette().lineBright))
