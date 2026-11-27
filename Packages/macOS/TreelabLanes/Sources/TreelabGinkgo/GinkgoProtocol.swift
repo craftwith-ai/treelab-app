@@ -15,11 +15,11 @@ public enum GinkgoVoiceState: String, Sendable, Equatable, CaseIterable {
     case closed, connecting, listening, thinking, speaking, paused
     case nameListening = "name_listening"
 
-    /// A conversation is open: the microphone listens to the person and the voice goes to OpenAI.
+    /// A conversation is open (paused included): its lines stay on screen until the next one.
     public var isConversation: Bool {
         switch self {
-        case .connecting, .listening, .thinking, .speaking: true
-        case .closed, .paused, .nameListening: false
+        case .connecting, .listening, .thinking, .speaking, .paused: true
+        case .closed, .nameListening: false
         }
     }
 }
@@ -50,12 +50,15 @@ public struct GinkgoLine: Sendable, Equatable {
     public var who: GinkgoSpeaker
     public var text: String
     public var final: Bool
+    /// When the line started, from the event that brought it (`at`).
+    public var at: Date?
 
-    public init(id: String, who: GinkgoSpeaker, text: String, final: Bool) {
+    public init(id: String, who: GinkgoSpeaker, text: String, final: Bool, at: Date? = nil) {
         self.id = id
         self.who = who
         self.text = text
         self.final = final
+        self.at = at
     }
 }
 
@@ -65,12 +68,15 @@ public struct GinkgoDid: Sendable, Equatable {
     public var project: String
     public var lane: String?
     public var text: String
+    /// When Ginkgo did it, from the event that said it (`at`).
+    public var at: Date?
 
-    public init(kind: GinkgoDidKind, project: String, lane: String?, text: String) {
+    public init(kind: GinkgoDidKind, project: String, lane: String?, text: String, at: Date? = nil) {
         self.kind = kind
         self.project = project
         self.lane = lane
         self.text = text
+        self.at = at
     }
 }
 

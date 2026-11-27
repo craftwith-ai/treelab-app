@@ -16,6 +16,12 @@ public enum LabCommand: Sendable, Equatable {
     case next(project: LabName, lane: LabName)
     /// Brings the lane's tab to the front (`lab app focus`).
     case focus(project: LabName, lane: LabName)
+    /// Says where Ginkgo.app is, whether the OpenAI key is stored and which contract it speaks
+    /// (`lab ginkgo status`: `APP=`, `KEY=`, `PROTOCOL=`).
+    case ginkgoStatus
+    /// Starts Ginkgo.app on a project (`lab ginkgo <project>`): with `background`, without a
+    /// conversation nor microphone (`--background`).
+    case ginkgoLaunch(project: LabName, background: Bool)
 
     /// The arguments passed to lab, program name excluded.
     public var arguments: [String] {
@@ -42,6 +48,10 @@ public enum LabCommand: Sendable, Equatable {
             return ["next", project.value, lane.value]
         case let .focus(project, lane):
             return ["app", "focus", project.value, lane.value]
+        case .ginkgoStatus:
+            return ["ginkgo", "status"]
+        case let .ginkgoLaunch(project, background):
+            return ["ginkgo", project.value] + (background ? ["--background"] : [])
         }
     }
 }
