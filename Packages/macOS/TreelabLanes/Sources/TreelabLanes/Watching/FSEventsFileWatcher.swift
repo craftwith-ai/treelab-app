@@ -37,7 +37,10 @@ public struct FSEventsFileWatcher: FileEventWatching {
                 let array = Unmanaged<CFArray>.fromOpaque(eventPaths).takeUnretainedValue() as NSArray
                 box.continuation.yield(array.prefix(count).compactMap { $0 as? String })
             }
-            let flags = FSEventStreamCreateFlags(kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagWatchRoot)
+            // IgnoreSelf: Treelab never writes lab's documents; its own writes (and, in tests, the
+            // fixture's writes delivered late by fseventsd) must not wake a refresh.
+            let flags = FSEventStreamCreateFlags(kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagFileEvents
+                | kFSEventStreamCreateFlagWatchRoot | kFSEventStreamCreateFlagIgnoreSelf)
             guard let stream = FSEventStreamCreate(
                 kCFAllocatorDefault, callback, &context, paths as CFArray,
                 FSEventStreamEventId(kFSEventStreamEventIdSinceNow), latency, flags

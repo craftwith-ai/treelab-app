@@ -182,6 +182,18 @@ public final class LanesModel {
         if selectedRequest?.id == lane.id { await readQuestion() }
     }
 
+    /// The choice a key press stands for: a single digit 1 to 9 typed without Command, Control or
+    /// Option (the app's key monitor hands it to ``pressDigit(_:)`` while the Feed is shown).
+    /// - Parameters:
+    ///   - characters: the key's characters, modifiers ignored.
+    ///   - withModifiers: whether Command, Control or Option is held.
+    /// - Returns: 1 to 9, or `nil`.
+    nonisolated public static func choiceDigit(_ characters: String?, withModifiers: Bool) -> Int? {
+        guard !withModifiers, let scalars = characters?.unicodeScalars, scalars.count == 1,
+              let scalar = scalars.first, ("1"..."9").contains(scalar) else { return nil }
+        return Int(scalar.value - 48)
+    }
+
     /// Key 1 to 9: picks that option of the first question (``pick(question:option:)``).
     /// - Parameter digit: the key pressed.
     /// - Returns: `false` when the question has no such option: the key is left to others.

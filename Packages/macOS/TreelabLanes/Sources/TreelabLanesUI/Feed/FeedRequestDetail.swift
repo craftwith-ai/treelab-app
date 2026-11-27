@@ -15,7 +15,7 @@ struct FeedRequestDetail: View {
             VStack(alignment: .leading, spacing: 16) {
                 if let request = model.selectedRequest {
                     header(request)
-                    Text(verbatim: request.record.why)
+                    Text(verbatim: request.record.reason)
                         .font(.system(size: 14)).foregroundStyle(palette.text)
                         .fixedSize(horizontal: false, vertical: true)
                     Rectangle().fill(palette.line).frame(height: 1)

@@ -108,6 +108,17 @@ public struct LaneRecord: Sendable, Equatable, Identifiable {
         )
     }
 
+    /// `WHY` for display: without lab's prefix of the request's kind (`question waiting: `…),
+    /// which the screens already say in words; any other text is the lane's own and stays whole.
+    public var reason: String {
+        let prefixes = ["question waiting", "permission requested", "work finished", "lane blocked", "next step to clarify", "closing"]
+        for prefix in prefixes where why.lowercased().hasPrefix(prefix + ":") {
+            let rest = why.dropFirst(prefix.count + 1).trimmingCharacters(in: .whitespaces)
+            return rest.isEmpty ? why : rest
+        }
+        return why
+    }
+
     /// A `WAKE_AT` epoch that is a real date: finite, after 1970 and before the year 3000.
     static func wakeDate(_ epoch: TimeInterval) -> Date? {
         epoch.isFinite && epoch > 0 && epoch < 32_503_680_000 ? Date(timeIntervalSince1970: epoch) : nil

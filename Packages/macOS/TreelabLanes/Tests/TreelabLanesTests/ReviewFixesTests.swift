@@ -323,3 +323,34 @@ struct RealLabFindingsTests {
         await starting.value
     }
 }
+
+@Suite("Seen on the screens")
+struct ScreenFindingsTests {
+    // The Feed got no digit: the app's key monitor now hands plain 1–9 to the model.
+    @Test("only a plain digit 1 to 9 picks a choice")
+    func choiceDigit() {
+        #expect(LanesModel.choiceDigit("2", withModifiers: false) == 2)
+        #expect(LanesModel.choiceDigit("9", withModifiers: false) == 9)
+        for other in ["0", "12", "a", "", "²", "٣"] { #expect(LanesModel.choiceDigit(other, withModifiers: false) == nil, "\(other)") }
+        #expect(LanesModel.choiceDigit(nil, withModifiers: false) == nil)
+        #expect(LanesModel.choiceDigit("2", withModifiers: true) == nil, "Command-2 and the like stay shortcuts")
+    }
+
+    // The banner and the Feed showed lab's English prefixes ("question waiting: …").
+    @Test("the reason shown drops lab's prefix and keeps the sentence")
+    func reason() throws {
+        func record(_ why: String) throws -> LaneRecord {
+            let block = try #require(KeyValueBlockParser().blocks(in: "PROJECT=p\nLANE=l\nWHY=\(why)\n").first)
+            return try #require(LaneRecord(block: block))
+        }
+        #expect(try record("question waiting: Les réglages s'ouvrent-ils à part ?").reason == "Les réglages s'ouvrent-ils à part ?")
+        #expect(try record("permission requested: Bash").reason == "Bash")
+        #expect(try record("work finished: Maquette prête").reason == "Maquette prête")
+        #expect(try record("lane blocked: Claude a terminé").reason == "Claude a terminé")
+        #expect(try record("next step to clarify: Lot 1").reason == "Lot 1")
+        #expect(try record("closing: acceptance missing").reason == "acceptance missing")
+        #expect(try record("checks running").reason == "checks running", "no known prefix: kept whole")
+        #expect(try record("note: keep this").reason == "note: keep this", "an unknown prefix is the lane's own text")
+        #expect(try record("question waiting").reason == "question waiting", "nothing after the prefix: kept whole")
+    }
+}

@@ -61,8 +61,8 @@ struct FeedSideColumn: View {
     private func laneLabel(_ lane: ClassifiedLane) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(verbatim: "\(lane.record.project) › \(lane.record.lane)").font(.system(size: 11, weight: .semibold)).foregroundStyle(palette.text).lineLimit(1)
-            if !lane.record.why.isEmpty {
-                Text(verbatim: lane.record.why).font(.system(size: 10)).foregroundStyle(palette.textSecondary).lineLimit(1)
+            if !lane.record.reason.isEmpty {
+                Text(verbatim: lane.record.reason).font(.system(size: 10)).foregroundStyle(palette.textSecondary).lineLimit(1)
             }
         }
     }

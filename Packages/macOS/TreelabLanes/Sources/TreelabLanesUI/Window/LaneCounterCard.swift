@@ -3,10 +3,11 @@ public import TreelabLanes
 
 /// The counter at the top of the sidebar: the number of lanes waiting for the user in large,
 /// then working, waiting and stopped; clicking it opens the Feed. Its figures are the sums of
-/// the projects' indicators.
+/// the projects' indicators. The click asks the card's own window to show the Feed
+/// (`treelabFeedRequested`).
 public struct LaneCounterCard: View {
     private let model: LanesModel
-    private let onOpen: (() -> Void)?
+    @State private var host = HostWindow()
     private let palette = HUDPalette()
     private let text = LanesText()
 
@@ -14,18 +15,15 @@ public struct LaneCounterCard: View {
     public static let height: CGFloat = 92
 
     /// Creates the card.
-    /// - Parameters:
-    ///   - model: the lanes model.
-    ///   - onOpen: opens the Feed in the card's window; ``LanesModel/openFeed()`` when `nil`.
-    public init(model: LanesModel, onOpen: (() -> Void)? = nil) {
+    /// - Parameter model: the lanes model.
+    public init(model: LanesModel) {
         self.model = model
-        self.onOpen = onOpen
     }
 
     public var body: some View {
         let total = model.state.snapshot.total
         Button {
-            if let onOpen { onOpen() } else { model.openFeed() }
+            host.requestFeed()
         } label: {
             HStack(spacing: 12) {
                 gauge(total)
@@ -53,6 +51,7 @@ public struct LaneCounterCard: View {
         }
         .buttonStyle(.plain)
         .help(text.openFeed)
+        .background(HostWindowReader(host: host))
         .accessibilityLabel(text.openFeed)
         .accessibilityValue([text.waiting(total.waitingForYou), text.working(total.working), text.stopped(total.stopped)].joined(separator: ", "))
         .padding(.horizontal, 8)

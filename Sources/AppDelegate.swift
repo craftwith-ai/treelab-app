@@ -15364,6 +15364,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         let paletteSelectionDelta = contextAwareCommandPaletteSelectionDelta(for: event)
 
+        // Treelab's Feed: plain 1–9 pick a choice, unless the user types in the answer field.
+        if treelabLanes.isFeedPresented, let feedWindow = commandPaletteShortcutWindow,
+           !(feedWindow.firstResponder is NSText),
+           let digit = LanesModel.choiceDigit(
+               event.charactersIgnoringModifiers,
+               withModifiers: !event.modifierFlags.intersection([.command, .control, .option]).isEmpty
+           ),
+           treelabLanes.pressDigit(digit) {
+            return true
+        }
+
         if shouldRouteCommandPaletteSelectionNavigation(
             delta: paletteSelectionDelta,
             isInteractive: commandPaletteInteractiveInTargetWindow,

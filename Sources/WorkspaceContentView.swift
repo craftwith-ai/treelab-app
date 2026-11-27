@@ -479,9 +479,7 @@ struct WorkspaceContentView: View {
         .safeAreaInset(edge: .top, spacing: 0) {
             // Treelab: the open lane's banner; it takes its own space (terminals draw above SwiftUI overlays).
             if let lanes = AppDelegate.shared?.treelabLanes {
-                LaneBanner(model: lanes, directory: workspace.currentDirectory) {
-                    NotificationCenter.default.post(name: .treelabFeedRequested, object: NSApp.keyWindow)
-                }
+                LaneBanner(model: lanes, directory: workspace.currentDirectory)
             }
         }
         .overlay {

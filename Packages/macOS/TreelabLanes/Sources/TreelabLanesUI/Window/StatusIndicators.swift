@@ -41,6 +41,7 @@ public struct StatusIndicators: View {
 public struct ProjectIndicators: View {
     private let model: LanesModel
     private let directory: String?
+    private let palette = HUDPalette()
 
     /// Creates the view.
     /// - Parameters:
@@ -54,7 +55,11 @@ public struct ProjectIndicators: View {
     public var body: some View {
         if let directory, let location = model.location(forDirectory: directory),
            location.project.counts.counted > 0 {
+            // On a dark pill: readable on any row, the selected one (light accent) included.
             StatusIndicators(counts: location.project.counts)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Capsule().fill(palette.background.opacity(0.92)))
         }
     }
 }

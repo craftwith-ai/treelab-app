@@ -450,7 +450,12 @@ private final class WindowCommandPaletteOverlayController: NSObject {
             return
         }
         guard locksTextInputFocus else {
+            // Treelab's Feed: focus goes to the Feed once (typing must not reach the terminal
+            // behind it), then stays where the user puts it, the answer field included.
             stopFocusLockTimer()
+            if window.isKeyWindow, !isPaletteResponder(window.firstResponder) {
+                _ = window.makeFirstResponder(hostingView)
+            }
             return
         }
 
@@ -12134,10 +12139,8 @@ struct VerticalTabsSidebar: View, Equatable {
         .overlay(alignment: .top) {
             // Treelab: the lanes counter, under the titlebar; it opens the Feed in this window.
             if let lanes = AppDelegate.shared?.treelabLanes {
-                LaneCounterCard(model: lanes) {
-                    NotificationCenter.default.post(name: .treelabFeedRequested, object: NSApp.keyWindow)
-                }
-                .padding(.top, MinimalModeChromeMetrics.titlebarHeight + 2)
+                LaneCounterCard(model: lanes)
+                    .padding(.top, MinimalModeChromeMetrics.titlebarHeight + 2)
             }
         }
         .accessibilityIdentifier("Sidebar")

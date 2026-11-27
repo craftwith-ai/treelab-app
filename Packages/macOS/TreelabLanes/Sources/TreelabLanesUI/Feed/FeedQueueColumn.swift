@@ -52,7 +52,7 @@ struct FeedQueueCard: View {
             }
             Text(verbatim: "\(request.record.project) › \(request.record.lane)")
                 .font(.system(size: 12, weight: .semibold)).foregroundStyle(palette.text).lineLimit(1)
-            Text(verbatim: request.record.why)
+            Text(verbatim: request.record.reason)
                 .font(.system(size: 11)).foregroundStyle(palette.textSecondary).lineLimit(2)
         }
         .padding(10)
