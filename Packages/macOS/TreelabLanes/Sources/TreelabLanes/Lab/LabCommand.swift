@@ -23,6 +23,38 @@ public enum LabCommand: Sendable, Equatable {
     /// conversation nor microphone (`--background`).
     case ginkgoLaunch(project: LabName, background: Bool)
 
+    // Account and settings, contract v1 (`contrat-compte.md` §3).
+
+    /// Reads the account, the trial, the plan, the seats and treelab's offer (`lab app account`).
+    case account
+    /// Sends the sign-in link to the address the person typed (`lab app signin --email <address>`).
+    case signIn(email: LabEmailAddress)
+    /// Closes every session of the account, this Mac included (`lab app signout --everywhere`).
+    case signOutEverywhere
+    /// Opens Stripe's secure page to subscribe, manage the subscription or see the invoices
+    /// (`lab subscribe`; without a terminal lab opens the page and returns).
+    case subscribe
+    /// Stores the OpenAI key in the Mac's keychain (`lab ginkgo key openai`): the key goes on
+    /// standard input (``standardInput``), never in the arguments.
+    case storeOpenAIKey(LabSecret)
+    /// Reads Ginkgo's settings: listening, speech, quiet hours (`lab app ginkgo`).
+    case ginkgoSettings
+    /// Writes one of Ginkgo's settings (`lab app ginkgo --listen|--speak|--quiet <value>`).
+    case setGinkgo(LabGinkgoSetting)
+    /// Writes a readable copy of Treelab's and lab's data, without secrets (`lab app data --export <folder>`).
+    case exportData(folder: LabFolderPath)
+    /// First step of an erase: lab says what will go and gives a token (`lab app data --erase`).
+    case eraseData
+    /// Second step of an erase, with the token of the first (`lab app data --erase --confirm <token>`).
+    case confirmErase(token: LabEraseToken)
+
+    /// What lab reads on its standard input: the secret of ``storeOpenAIKey(_:)``, nothing for
+    /// every other command (an empty input).
+    public var standardInput: LabSecret? {
+        if case let .storeOpenAIKey(secret) = self { return secret }
+        return nil
+    }
+
     /// The arguments passed to lab, program name excluded.
     public var arguments: [String] {
         switch self {
@@ -52,6 +84,26 @@ public enum LabCommand: Sendable, Equatable {
             return ["ginkgo", "status"]
         case let .ginkgoLaunch(project, background):
             return ["ginkgo", project.value] + (background ? ["--background"] : [])
+        case .account:
+            return ["app", "account"]
+        case let .signIn(email):
+            return ["app", "signin", "--email", email.value]
+        case .signOutEverywhere:
+            return ["app", "signout", "--everywhere"]
+        case .subscribe:
+            return ["subscribe"]
+        case .storeOpenAIKey:
+            return ["ginkgo", "key", "openai"]
+        case .ginkgoSettings:
+            return ["app", "ginkgo"]
+        case let .setGinkgo(setting):
+            return ["app", "ginkgo", setting.option, setting.value]
+        case let .exportData(folder):
+            return ["app", "data", "--export", folder.value]
+        case .eraseData:
+            return ["app", "data", "--erase"]
+        case let .confirmErase(token):
+            return ["app", "data", "--erase", "--confirm", token.value]
         }
     }
 }
