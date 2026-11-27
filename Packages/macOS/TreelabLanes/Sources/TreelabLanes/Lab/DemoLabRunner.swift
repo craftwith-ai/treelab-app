@@ -2,7 +2,7 @@ public import Foundation
 
 /// A stand-in for lab that never runs a program: it answers `lab ginkgo question` from files of a
 /// demo folder (`questions/<project>/<lane>`, read through ``SnapshotFileGate``), accepts the reader
-/// declaration, and refuses every action. Used to show invented lanes (screens, trials) without
+/// declaration, answers `lab ginkgo status` from `ginkgo-status`, and refuses every action. Used to show invented lanes (screens, trials) without
 /// touching the user's lab.
 public struct DemoLabRunner: LabCommandRunning {
     private let folder: URL
@@ -28,6 +28,10 @@ public struct DemoLabRunner: LabCommandRunning {
             let questions = folder.appendingPathComponent("questions")
             let file = questions.appendingPathComponent(project.value).appendingPathComponent(lane.value)
             let text = (try? gate.read(file, within: questions)) ?? "WAITS=none\n"
+            return LabCommandOutput(status: 0, standardOutput: text, standardError: "")
+        case .ginkgoStatus:
+            // `ginkgo-status` of the demo folder; none: an old Ginkgo, so nothing is ever launched.
+            let text = (try? gate.read(folder.appendingPathComponent("ginkgo-status"), within: folder)) ?? "APP=absent\nKEY=present\n"
             return LabCommandOutput(status: 0, standardOutput: text, standardError: "")
         default:
             return LabCommandOutput(status: 1, standardOutput: "", standardError: "lab: ERROR demo: nothing is sent\n")

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// What Treelab knows of Ginkgo on one connection, built from its events (levels excluded: they
 /// change 30 times a second and live in ``GinkgoLevels``).
@@ -65,8 +65,8 @@ public struct GinkgoSession: Sendable, Equatable {
             if let listen = snapshot.listen { self.listen = listen }
             pendingClose = snapshot.confirm
             about = snapshot.about
-            lines = Array(snapshot.lines.suffix(Self.maxLines))
-            did = Array(snapshot.did.suffix(Self.maxDid))
+            lines = Array(snapshot.lines.suffix(Self.maxLines)).map { $0.dated(envelope.at) }
+            did = Array(snapshot.did.suffix(Self.maxDid)).map { $0.dated(envelope.at) }
             problem = nil
         case let .state(newState, mic, focus):
             if newState.isConversation, !state.isConversation { startConversation() }
@@ -80,13 +80,13 @@ public struct GinkgoSession: Sendable, Equatable {
             keyDown = down
         case let .line(line):
             if let index = lines.lastIndex(where: { $0.id == line.id }) {
-                lines[index] = line
+                lines[index] = line.dated(lines[index].at ?? envelope.at)
             } else {
-                lines.append(line)
+                lines.append(line.dated(envelope.at))
                 if lines.count > Self.maxLines { lines.removeFirst(lines.count - Self.maxLines) }
             }
         case let .did(action):
-            did.append(action)
+            did.append(action.dated(envelope.at))
             if did.count > Self.maxDid { did.removeFirst(did.count - Self.maxDid) }
         case let .about(about):
             self.about = about
@@ -123,5 +123,23 @@ public struct GinkgoSession: Sendable, Equatable {
         did = []
         about = nil
         lastCloseOutcome = nil
+    }
+}
+
+extension GinkgoLine {
+    /// The line with its start time, kept when it already has one.
+    func dated(_ date: Date) -> GinkgoLine {
+        var line = self
+        if line.at == nil { line.at = date }
+        return line
+    }
+}
+
+extension GinkgoDid {
+    /// The action with its time, kept when it already has one.
+    func dated(_ date: Date) -> GinkgoDid {
+        var action = self
+        if action.at == nil { action.at = date }
+        return action
     }
 }

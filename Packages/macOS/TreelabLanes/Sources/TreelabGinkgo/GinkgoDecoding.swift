@@ -1,5 +1,5 @@
 public import Foundation
-public import TreelabLanes
+import TreelabLanes
 
 /// Why a line from Ginkgo stops the connection.
 public enum GinkgoProtocolError: Error, Sendable, Equatable {
