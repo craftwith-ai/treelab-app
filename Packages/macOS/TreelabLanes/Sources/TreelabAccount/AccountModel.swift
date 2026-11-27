@@ -7,8 +7,10 @@ public import TreelabLanes
 ///
 /// Treelab speaks the account contract v1 only when lab says `PROTOCOL=1`; otherwise the account
 /// comes with the next treelab version and nothing is launched, except what already works
-/// (`lab subscribe`, the OpenAI key). A new reading is woken by the `WATCH=` file lab rewrites,
-/// never by a timer. Nothing here opens a network connection: lab does.
+/// (`lab subscribe`, the OpenAI key). A new reading is woken by the `WATCH=` file lab rewrites
+/// (a temporary file, then a rename): its folder's entries are watched by the kernel, and only a
+/// new file there (another inode, size or date) wakes a reading. Never a timer. Nothing here opens
+/// a network connection: lab does.
 ///
 /// ```swift
 /// let account = AccountModel.live(home: home)
@@ -38,11 +40,13 @@ public final class AccountModel {
     @ObservationIgnored private var refreshAgain = false
     @ObservationIgnored private var watchedFiles: [String] = []
     @ObservationIgnored private var watchTask: Task<Void, Never>?
+    @ObservationIgnored private var seenFiles: [String: FileSignature] = [:]
 
     /// Creates the model.
     /// - Parameters:
     ///   - runner: runs lab's commands; `nil` when lab cannot be found.
-    ///   - watcher: wakes a reading when the `WATCH=` file changes.
+    ///   - watcher: reports the folders of the `WATCH=` files whose entries changed
+    ///     (``KernelDirectoryWatcher``; FSEvents stays silent for some processes, lot 09).
     public init(runner: (any LabCommandRunning)?, watcher: any FileEventWatching) {
         self.runner = runner
         self.watcher = watcher
@@ -87,6 +91,10 @@ public final class AccountModel {
     }
 
     private func readOnce() async {
+        // What the watched files are before reading: a change made during the reading is seen next.
+        let watchedBefore = watchedFiles
+        let before = Self.signatures(of: watchedBefore)
+        defer { if watchedFiles == watchedBefore { seenFiles = before } }
         guard let runner else {
             status = .labMissing("")
             follow([])
@@ -111,22 +119,49 @@ public final class AccountModel {
         }
     }
 
-    /// Watches the folders of `files` and reads again when one of the files changes.
+    /// Watches the folders of `files` and reads again when one of the files was rewritten.
     private func follow(_ files: [String]) {
         guard files != watchedFiles else { return }
         watchedFiles = files
+        seenFiles = Self.signatures(of: files)
         watchTask?.cancel()
         watchTask = nil
         guard !files.isEmpty else { return }
         let folders = Array(Set(files.map { ($0 as NSString).deletingLastPathComponent })).sorted()
-        let wanted = Set(files)
+        let concerned = Set(folders).union(files)
         let stream = watcher.changes(under: folders)
         watchTask = Task { [weak self] in
             for await paths in stream {
-                guard paths.contains(where: { wanted.contains($0) }) else { continue }
-                await self?.refresh()
+                guard paths.contains(where: { concerned.contains($0) }) else { continue }
+                await self?.filesMayHaveChanged()
             }
         }
+    }
+
+    /// A watched folder changed: reads again only when a watched file is not the one read last.
+    private func filesMayHaveChanged() async {
+        guard Self.signatures(of: watchedFiles) != seenFiles else { return }
+        await refresh()
+    }
+
+    /// What tells a rewritten file apart: its inode, size and modification date.
+    struct FileSignature: Equatable {
+        let inode: UInt64
+        let size: Int64
+        let seconds: Int
+        let nanoseconds: Int
+    }
+
+    /// The signature of each file that exists.
+    static func signatures(of files: [String]) -> [String: FileSignature] {
+        var result: [String: FileSignature] = [:]
+        for path in files {
+            var info = stat()
+            guard lstat(path, &info) == 0 else { continue }
+            result[path] = FileSignature(inode: UInt64(info.st_ino), size: Int64(info.st_size),
+                                         seconds: info.st_mtimespec.tv_sec, nanoseconds: info.st_mtimespec.tv_nsec)
+        }
+        return result
     }
 
     // MARK: Account

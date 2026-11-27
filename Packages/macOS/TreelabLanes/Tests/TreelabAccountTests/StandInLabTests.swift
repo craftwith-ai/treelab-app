@@ -124,11 +124,11 @@ struct RealWatchTests {
             default: return ok("KEY=present\n")
             }
         }
-        let account = AccountModel(runner: lab, watcher: FSEventsFileWatcher(latency: 0.05))
+        let account = AccountModel(runner: lab, watcher: AccountModel.fileWatcher())
         account.start()
         #expect(await eventually { await MainActor.run { account.snapshot?.plan == .trial } })
         try await Task.sleep(for: .milliseconds(300))
-        // Another program rewrites it, as lab does: FSEvents ignores Treelab's own writes.
+        // Another program rewrites it, as lab does (a temporary file, then a rename).
         let temporary = folder.url.appendingPathComponent(".account.tmp")
         try first.replacingOccurrences(of: "PLAN=trial", with: "PLAN=monthly").write(to: temporary, atomically: false, encoding: .utf8)
         let move = Process()

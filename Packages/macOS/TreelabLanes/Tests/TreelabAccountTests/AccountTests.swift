@@ -534,20 +534,29 @@ struct AccountModelTests {
         #expect(account.notice == .refused("no browser to open"))
     }
 
-    @Test("the WATCH= file wakes a new reading, nothing else does")
-    func watch() async {
+    @Test("the WATCH= file rewritten wakes a new reading; its folder changing alone does not")
+    func watch() async throws {
+        let folder = try ScratchFolder()
+        let file = folder.url.appendingPathComponent("account")
+        try "first\n".write(to: file, atomically: false, encoding: .utf8)
         let watcher = ScriptedFolders()
-        let lab = currentLab()
+        let lab = currentLab(account: trialAccount.replacingOccurrences(of: "WATCH=/Users/camille/.lab/state/account", with: "WATCH=\(file.path)"))
         let account = model(lab, watcher: watcher)
         account.start()
         #expect(await eventually { await lab.arguments.count == 3 })
-        #expect(await eventually { watcher.watched == [["/Users/camille/.lab/state"]] })
+        let folderPath = folder.path
+        #expect(await eventually { watcher.watched == [[folderPath]] })
         await lab.forget()
-        watcher.emit("/Users/camille/.lab/state/app-snapshot/version")
-        watcher.emit("/Users/camille/.lab/state/other")
+        // Another file of the folder, or the folder itself, while the account file stays the same.
+        watcher.emit(folder.path + "/other")
+        watcher.emit(folder.path)
         try? await Task.sleep(for: .milliseconds(150))
         #expect(await lab.calls.isEmpty)
-        watcher.emit("/Users/camille/.lab/state/account")
+        // lab replaces the file (a temporary file, then a rename): the kernel reports the folder.
+        let temporary = folder.url.appendingPathComponent(".account.tmp")
+        try "second, longer\n".write(to: temporary, atomically: false, encoding: .utf8)
+        #expect(rename(temporary.path, file.path) == 0)
+        watcher.emit(folder.path)
         #expect(await eventually { await lab.arguments.first == ["app", "account"] })
     }
 }
