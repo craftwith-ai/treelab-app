@@ -5,8 +5,9 @@
 # Computer Use helper, the AppleScript dictionary (.sdef) and an HTML page title.
 #   A. "cmux" naming the app becomes the brand name in English, French, German, Japanese, Arabic,
 #      the keys of rules.json "key_overrides" take their text (the accent is not blue), and a
-#      package key naming cmux that the main table lacks is added to it (upstream calls without
-#      bundle: read the main table), like a main-table key the brand changes that a language lacks;
+#      package key naming cmux (or already naming the brand) that the main table lacks is added to
+#      it (upstream calls without bundle: read the main table), like a main-table key the brand
+#      changes that a language lacks;
 #   B. technical names stay: `code`, quoted commands, cmux.json, cmux-tui, ~/.cmuxterm, paths,
 #      addresses, CMUX_* variables, identifiers, "Usage: cmux", every cli.* key, the GPL line;
 #   C. format specifiers (%@, %1$@, %#@n@) and each file's format and encoding are kept,
@@ -146,6 +147,16 @@ write(os.path.join(sub, "fr.lproj", "Localizable.strings"), {
 write(os.path.join(sub, "de.lproj", "Localizable.strings"), {
     "settings.sub.plain": "Keine Marke hier.",
 }, "xml-utf16")
+# A package written for Treelab (Packages/macOS/TreelabLanes): its English text already names the brand.
+lanes = os.path.join(res, "TreelabLanes_TreelabLanesUI.bundle", "Contents", "Resources")
+write(os.path.join(lanes, "en.lproj", "Localizable.strings"), {
+    "treelab.pkg.version": "Treelab does not know this lab version.",
+    "treelab.pkg.plain": "No name here.",
+}, "binary")
+write(os.path.join(lanes, "fr.lproj", "Localizable.strings"), {
+    "treelab.pkg.version": "Treelab ne connaît pas cette version de lab.",
+    "treelab.pkg.plain": "Aucun nom ici.",
+}, "binary")
 write(os.path.join(app, "Contents", "Library", "cmux Computer Use.app", "Contents", "Resources", "en.lproj", "InfoPlist.strings"), {
     "NSAccessibilityUsageDescription": "cmux Computer Use controls apps only when you ask.",
 }, "openstep")
@@ -240,6 +251,13 @@ expect_value "$EN" quit "Quit Treelab"
 for missing in settings.sub.plain cli.sub.help; do
   if value "$APP/$EN" "$missing" >/dev/null 2>&1; then fail "$missing copied to the main table"; else pass "$missing not copied"; fi
 done
+
+# A3b. A package key whose English text already names the brand is planned like one naming cmux:
+#      check counts every key naming the app, whether it said cmux or Treelab before the pass.
+expect_value "$EN" treelab.pkg.version "Treelab does not know this lab version."
+expect_value Contents/Resources/fr.lproj/Localizable.strings treelab.pkg.version "Treelab ne connaît pas cette version de lab."
+expect_value Contents/Resources/de.lproj/Localizable.strings treelab.pkg.version "Treelab does not know this lab version."
+if value "$APP/$EN" treelab.pkg.plain >/dev/null 2>&1; then fail "treelab.pkg.plain copied to the main table"; else pass "treelab.pkg.plain not copied"; fi
 
 # A4. Main-table keys the brand changes and a language lacks get the branded English text there:
 #     macOS shows the binary's English default (cmux included) for a missing key, never the en table.
