@@ -2,11 +2,17 @@ import AppKit
 import CmuxFeedback
 import CmuxFoundation
 import SwiftUI
+import TreelabLanesUI
 
 extension cmuxApp {
     @CommandsBuilder
     var helpCommands: some Commands {
         CommandGroup(replacing: .help) {
+            // Treelab: the welcome of the first launch, reopened.
+            if AppBranding.current != .cmux {
+                Button(TreelabAccountCenter.welcomeMenuTitle) { AppDelegate.shared?.treelabAccount.showWelcome() }
+                Divider()
+            }
             primaryDocsHelpMenuItems
             secondaryDocsHelpMenuItems
 
