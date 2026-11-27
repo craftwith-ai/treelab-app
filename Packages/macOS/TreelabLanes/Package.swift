@@ -15,6 +15,7 @@ let package = Package(
         .library(name: "TreelabLanes", targets: ["TreelabLanes"]),
         .library(name: "TreelabLanesUI", targets: ["TreelabLanesUI"]),
         .library(name: "TreelabGinkgo", targets: ["TreelabGinkgo"]),
+        .library(name: "TreelabAccount", targets: ["TreelabAccount"]),
     ],
     targets: [
         .target(
@@ -36,9 +37,20 @@ let package = Package(
                 .enableUpcomingFeature("InternalImportsByDefault"),
             ]
         ),
+        // The account and settings brain (account contract v1): reads `lab app account` and
+        // `lab app ginkgo`, acts through lab's commands. No interface, no network, no timer.
+        .target(
+            name: "TreelabAccount",
+            dependencies: ["TreelabLanes"],
+            swiftSettings: [
+                .swiftLanguageMode(.v6),
+                .enableUpcomingFeature("ExistentialAny"),
+                .enableUpcomingFeature("InternalImportsByDefault"),
+            ]
+        ),
         .target(
             name: "TreelabLanesUI",
-            dependencies: ["TreelabLanes", "TreelabGinkgo"],
+            dependencies: ["TreelabLanes", "TreelabGinkgo", "TreelabAccount"],
             resources: [
                 .process("Resources"),
             ],
@@ -59,6 +71,14 @@ let package = Package(
         .testTarget(
             name: "TreelabLanesUITests",
             dependencies: ["TreelabLanesUI", "TreelabGinkgo", "TreelabLanes"],
+            swiftSettings: [
+                .swiftLanguageMode(.v6),
+                .enableUpcomingFeature("ExistentialAny"),
+            ]
+        ),
+        .testTarget(
+            name: "TreelabAccountTests",
+            dependencies: ["TreelabAccount", "TreelabLanes"],
             swiftSettings: [
                 .swiftLanguageMode(.v6),
                 .enableUpcomingFeature("ExistentialAny"),
