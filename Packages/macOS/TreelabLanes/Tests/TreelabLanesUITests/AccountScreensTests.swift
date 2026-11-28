@@ -71,6 +71,32 @@ struct AccountScreensTests {
         #expect(english.plan(key).title == text.accountPlanLifetime)
     }
 
+    @Test("a Mac that already pays or has nothing more to pay is never offered the free trial nor its prices")
+    func noTrialPitchToAPayingMac() {
+        let presentation = AccountPresentation()
+        let text = AccountText()
+        let offer = AccountOffer(trialDays: 14, month: 39, year: 390, currency: "EUR", taxIncluded: true)
+        let lifetime = AccountSnapshot(signedIn: false, activation: .key, plan: .lifetime, standing: .active, offer: offer)
+        let monthly = AccountSnapshot(signedIn: true, plan: .subscription, period: .month, standing: .active, offer: offer)
+        for paying in [lifetime, monthly] {
+            #expect(!presentation.offersTrial(paying))
+            #expect(presentation.welcomeAccountTitle(paying) == text.welcomeOverviewAccount)
+            #expect(presentation.signInDetail(paying) == nil)
+        }
+        let trial = AccountSnapshot(signedIn: true, plan: .trial, standing: .trial, trialDaysLeft: 9, offer: offer)
+        let signedOut = AccountSnapshot(signedIn: false, plan: AccountPlan.none, offer: offer)
+        let over = AccountSnapshot(signedIn: true, plan: .subscription, period: .month, standing: .ended, offer: offer)
+        for open in [trial, signedOut, over] {
+            #expect(presentation.offersTrial(open))
+            #expect(presentation.welcomeAccountTitle(open) == text.welcomeTrialTitleDays(14))
+        }
+        #expect(presentation.signInDetail(signedOut) == text.accountSignInDetailDays(14))
+        #expect(presentation.signInDetail(AccountSnapshot()) == text.accountSignInDetail)
+        // lab not answering the contract yet: the step stays the trial's, as before.
+        #expect(presentation.offersTrial(nil))
+        #expect(presentation.welcomeAccountTitle(nil) == text.welcomeTrialTitle)
+    }
+
     @Test("v1.1: a subscription says its period, or only 'subscription' before the accounts; ended is ended")
     func subscriptionLines() {
         let english = AccountPresentation(locale: Locale(identifier: "en_US"))
