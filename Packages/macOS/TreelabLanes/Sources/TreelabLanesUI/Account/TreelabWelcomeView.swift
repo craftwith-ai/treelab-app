@@ -257,8 +257,10 @@ private struct TrialStep: View {
 
     var body: some View {
         let offer = model.snapshot?.offer
-        StepTitle(title: offer?.trialDays.map(text.welcomeTrialTitleDays) ?? text.welcomeTrialTitle)
-        HUDNote(text: text.welcomeTrialNoCard, color: palette.text)
+        // A Mac that pays or has a lifetime licence is not offered the trial nor its prices.
+        let offersTrial = presentation.offersTrial(model.snapshot)
+        StepTitle(title: presentation.welcomeAccountTitle(model.snapshot))
+        if offersTrial { HUDNote(text: text.welcomeTrialNoCard, color: palette.text) }
         HUDCard(title: text.accountCardAccount) {
             switch model.status {
             case let .contract(account) where account.signedIn || account.activation == .key:
@@ -277,7 +279,7 @@ private struct TrialStep: View {
                     HUDNote(text: note, color: palette.amber)
                 }
             }
-            if let offer, offer.isComplete, let month = presentation.price(offer.month, currency: offer.currency),
+            if offersTrial, let offer, offer.isComplete, let month = presentation.price(offer.month, currency: offer.currency),
                let year = presentation.price(offer.year, currency: offer.currency) {
                 HUDNote(text: text.welcomeTrialThen(month, year))
                 if offer.taxIncluded { HUDNote(text: text.accountOfferTaxIncluded) }

@@ -231,6 +231,7 @@ private struct AccountCard: View {
     @Environment(\.accountScreenSize) private var size
     private let palette = HUDPalette()
     private let text = AccountText()
+    private let presentation = AccountPresentation()
 
     var body: some View {
         HUDCard(title: text.accountCardAccount) {
@@ -253,7 +254,7 @@ private struct AccountCard: View {
                 Text(text.accountSignedOut).font(.system(size: size.body, weight: .semibold))
                 if account.activation == .key { HUDNote(text: text.accountActivationKey, color: palette.cyan) }
                 SignInForm(model: model, email: $email, button: text.accountSendLink)
-                HUDNote(text: account.offer.trialDays.map(text.accountSignInDetailDays) ?? text.accountSignInDetail)
+                if let detail = presentation.signInDetail(account) { HUDNote(text: detail) }
             }
         }
     }

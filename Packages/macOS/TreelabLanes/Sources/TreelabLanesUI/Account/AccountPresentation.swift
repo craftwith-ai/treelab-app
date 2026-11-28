@@ -33,6 +33,26 @@ struct AccountPresentation: Sendable {
         }
     }
 
+    /// Whether the account screens pitch the free trial and the prices after it: never to a Mac that
+    /// already pays or has nothing more to pay (``AccountSnapshot/isSubscribed``: a running
+    /// subscription, a lifetime licence). `nil` (lab not answering the contract yet) keeps the trial.
+    func offersTrial(_ account: AccountSnapshot?) -> Bool {
+        account?.isSubscribed != true
+    }
+
+    /// The title of the welcome's account step: the free trial, or the account alone once it pays.
+    func welcomeAccountTitle(_ account: AccountSnapshot?) -> String {
+        guard offersTrial(account) else { return text.welcomeOverviewAccount }
+        return account?.offer.trialDays.map(text.welcomeTrialTitleDays) ?? text.welcomeTrialTitle
+    }
+
+    /// The line under the settings' sign-in field: the one-time link and the trial it starts, never
+    /// a trial promised to a Mac that pays.
+    func signInDetail(_ account: AccountSnapshot) -> String? {
+        guard offersTrial(account) else { return nil }
+        return account.offer.trialDays.map(text.accountSignInDetailDays) ?? text.accountSignInDetail
+    }
+
     /// The plan in one line, and the line under it (days left, renewal or end date).
     func plan(_ account: AccountSnapshot) -> (title: String, detail: String?) {
         if account.standing == .unpaid { return (text.accountPlanUnpaid, nil) }
