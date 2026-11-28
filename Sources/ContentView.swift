@@ -3243,6 +3243,18 @@ struct ContentView: View {
             if !presented, isTreelabGinkgoPresented { commandPaletteOverlayState = .closed }
         })
 
+        // Treelab: while Ginkgo's voice screen is shown, the window says a palette is shown, as
+        // the command palette does. Otherwise, when the window becomes key again, the focus
+        // coordinator hands the keyboard to the terminal behind the screen, which then receives
+        // Escape and Ginkgo hears nothing. The Feed keeps its own focus handling.
+        view = AnyView(view.onChange(of: isTreelabGinkgoPresented) { _, presented in
+            guard let window = observedWindow ?? NSApp.keyWindow ?? NSApp.mainWindow else { return }
+            AppDelegate.shared?.setCommandPaletteVisible(
+                presented || commandPaletteOverlayState == .palette,
+                for: window
+            )
+        })
+
         view = AnyView(view.onReceive(NotificationCenter.default.publisher(for: .savedLayoutSaveRequested)) { notification in
             if Self.shouldHandleSavedLayoutSaveRequest(observedWindow: observedWindow, requestedWindow: notification.object as? NSWindow, keyWindow: NSApp.keyWindow, mainWindow: NSApp.mainWindow) {
                 presentSavedLayoutSavePrompt()
