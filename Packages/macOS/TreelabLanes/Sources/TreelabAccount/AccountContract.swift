@@ -95,6 +95,11 @@ public enum AccountContract {
     public static func refusal(of output: LabCommandOutput) -> LabRefusal {
         let code = text(block(of: output).first("REASON"))
         if code == "unsupported" { return .unsupported }
+        // Code 2, no REASON= and lab's usage on stderr: this lab does not know the command yet (contract § 4).
+        let firstLine = output.standardError.split(separator: "\n").first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        if output.status == 2, code == nil, firstLine?.trimmingCharacters(in: .whitespaces).hasPrefix("usage: lab") == true {
+            return .unsupported
+        }
         let saysSomething = output.standardError.split(separator: "\n").contains { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         if saysSomething, let clear = text(output.refusal) { return .said(clear) }
         return .said(code ?? output.refusal)
