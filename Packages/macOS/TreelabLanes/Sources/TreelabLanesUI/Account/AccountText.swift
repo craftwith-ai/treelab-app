@@ -316,7 +316,7 @@ struct AccountText: Sendable {
     /// « Effacer mes données… »
     var privacyErase: String { t("treelab.privacy.erase", "Erase my data…") }
     /// « Efface les données de Treelab et de lab sur ce Mac ; ta clé OpenAI quitte le trousseau. Deux étapes : rien ne part sans ta confirmation. »
-    var privacyEraseDetail: String { t("treelab.privacy.erase.detail", "On this Mac only: erases what lab keeps for Treelab and Ginkgo, the local copy of your account and your OpenAI key. Your projects, lanes and account stay. Two steps: nothing goes without your confirmation.") }
+    var privacyEraseDetail: String { t("treelab.privacy.erase.detail", "On this Mac only: erases what lab keeps for Treelab and Ginkgo, the local copy of your account and your OpenAI key. Your projects and your account stay. Two steps: nothing goes without your confirmation.") }
     /// « lab va effacer : %@ »
     func privacyEraseReadback(_ a: String) -> String {
         String(localized: "treelab.privacy.erase.readback", defaultValue: "lab will erase: \(a)", bundle: .module)

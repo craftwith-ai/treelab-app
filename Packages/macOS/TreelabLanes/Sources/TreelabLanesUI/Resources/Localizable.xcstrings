@@ -1,6 +1,132 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "treelab.account.activation.key": {
+      "comment": "Said when this Mac is activated by a licence key, before the accounts.",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هذا الـ Mac مُفعَّل بمفتاح ترخيصك."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ovaj Mac je aktiviran tvojim licencnim ključem."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne Mac er aktiveret med din licensnøgle."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Mac ist mit deinem Lizenzschlüssel aktiviert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Mac is activated by your licence key."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este Mac está activado con tu clave de licencia."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce Mac est activé par ta clé de licence."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo Mac è attivato dalla tua chiave di licenza."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この Mac はライセンスキーで有効化されています。"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac នេះត្រូវបានធ្វើឱ្យដំណើរការដោយសោអាជ្ញាប័ណ្ណរបស់អ្នក។"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 Mac은 라이선스 키로 활성화되어 있습니다."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne Macen er aktivert med lisensnøkkelen din."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ten Mac jest aktywowany twoim kluczem licencyjnym."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este Mac está ativado pela sua chave de licença."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этот Mac активирован твоим лицензионным ключом."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac เครื่องนี้เปิดใช้งานด้วยคีย์ไลเซนส์ของคุณ"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu Mac lisans anahtarınla etkinleştirildi."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Цей Mac активовано твоїм ліцензійним ключем."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这台 Mac 已通过你的许可证密钥激活。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這台 Mac 已透過你的授權金鑰啟用。"
+          }
+        }
+      }
+    },
     "treelab.account.bar.ended": {
       "comment": "Second line when the subscription ended.",
       "extractionState": "manual",
@@ -123,6 +249,132 @@
           "stringUnit": {
             "state": "translated",
             "value": "訂閱已結束"
+          }
+        }
+      }
+    },
+    "treelab.account.bar.lifetime": {
+      "comment": "Second line for a lifetime licence.",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ترخيص مدى الحياة"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doživotna licenca"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Livstidslicens"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lebenslange Lizenz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lifetime licence"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencia de por vida"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licence à vie"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licenza a vita"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "永久ライセンス"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "អាជ្ញាប័ណ្ណមួយជីវិត"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "평생 라이선스"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Livstidslisens"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencja dożywotnia"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licença vitalícia"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Бессрочная лицензия"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ไลเซนส์ตลอดชีพ"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ömür boyu lisans"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Безстрокова ліцензія"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "永久许可证"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "永久授權"
           }
         }
       }
@@ -253,6 +505,132 @@
         }
       }
     },
+    "treelab.account.bar.none": {
+      "comment": "Second line when signed in without a subscription.",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا اشتراك"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nema pretplate"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intet abonnement"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Abo"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No subscription"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin suscripción"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas d’abonnement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun abbonamento"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サブスクリプションなし"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "គ្មានការជាវ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "구독 없음"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke noe abonnement"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brak subskrypcji"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem assinatura"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет подписки"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ไม่มีการสมัครสมาชิก"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonelik yok"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Немає підписки"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未订阅"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未訂閱"
+          }
+        }
+      }
+    },
     "treelab.account.bar.open": {
       "comment": "Accessibility label and tooltip of the account entry.",
       "extractionState": "manual",
@@ -375,132 +753,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "開啟帳號與設定"
-          }
-        }
-      }
-    },
-    "treelab.account.bar.owner": {
-      "comment": "Second line for the owner's account.",
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "المالك · لا شيء للدفع"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vlasnik · ništa za plaćanje"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ejer · intet at betale"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inhaber · nichts zu zahlen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Owner · nothing to pay"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Propietario · nada que pagar"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Propriétaire · rien à payer"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Proprietario · niente da pagare"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "オーナー · 支払い不要"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ម្ចាស់ · មិនបាច់បង់ប្រាក់"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "소유자 · 결제 없음"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eier · ingenting å betale"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Właściciel · nic do zapłaty"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Proprietário · nada a pagar"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Владелец · платить не нужно"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "เจ้าของ · ไม่ต้องจ่าย"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sahip · ödeme yok"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Власник · платити не треба"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "所有者 · 无需付费"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "擁有者 · 無需付費"
           }
         }
       }
@@ -753,6 +1005,132 @@
           "stringUnit": {
             "state": "translated",
             "value": "未登入 · 免費試用"
+          }
+        }
+      }
+    },
+    "treelab.account.bar.subscription": {
+      "comment": "Second line for a subscription whose period lab does not say yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مشترك"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pretplata"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonnent"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonniert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscribed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suscrito"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonné"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbonato"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登録済み"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "បានជាវ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "구독 중"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonnent"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subskrypcja"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assinante"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подписка"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "สมัครสมาชิกแล้ว"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abone"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Підписка"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已订阅"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已訂閱"
           }
         }
       }
@@ -1551,6 +1929,132 @@
           "stringUnit": {
             "state": "translated",
             "value": "試用已結束 · 去訂閱"
+          }
+        }
+      }
+    },
+    "treelab.account.bar.unknown": {
+      "comment": "Second line when lab has not read the plan yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الخطة غير معروفة بعد"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan još nije poznat"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planen kendes ikke endnu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarif noch nicht bekannt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan not known yet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan todavía desconocido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formule pas encore connue"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piano non ancora noto"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プランはまだ不明"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "មិនទាន់ដឹងគម្រោងនៅឡើយ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "아직 알 수 없는 요금제"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planen er ikke kjent ennå"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan jeszcze nieznany"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plano ainda desconhecido"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тариф пока неизвестен"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ยังไม่ทราบแพ็กเกจ"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan henüz bilinmiyor"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тариф поки невідомий"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未获知方案"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未得知方案"
           }
         }
       }
@@ -4565,6 +5069,132 @@
         }
       }
     },
+    "treelab.account.notice.savedNextOpen": {
+      "comment": "Notice after saving the listening mode: Ginkgo applies it at its next opening.",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حُفظ: سيأخذ Ginkgo به عند فتحه في المرة القادمة."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sačuvano: Ginkgo će to primijeniti kad se sljedeći put otvori."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gemt: Ginkgo bruger det, næste gang det åbnes."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gespeichert: Ginkgo übernimmt es beim nächsten Öffnen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved: Ginkgo takes it the next time it opens."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardado: Ginkgo lo aplicará la próxima vez que se abra."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistré : Ginkgo le prendra à sa prochaine ouverture."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvato: Ginkgo lo applicherà alla prossima apertura."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存しました。Ginkgo の次回起動時に反映されます。"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "បានរក្សាទុក៖ Ginkgo នឹងយកវាទៅប្រើនៅពេលបើកលើកក្រោយ។"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "저장했습니다: Ginkgo를 다음에 열 때 적용됩니다."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagret: Ginkgo tar det i bruk neste gang det åpnes."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapisano: Ginkgo zastosuje to przy następnym otwarciu."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvo: o Ginkgo vai aplicar na próxima vez que abrir."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранено: Ginkgo применит это при следующем открытии."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "บันทึกแล้ว: Ginkgo จะใช้ค่านี้เมื่อเปิดครั้งถัดไป"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydedildi: Ginkgo bunu bir sonraki açılışında uygular."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Збережено: Ginkgo застосує це під час наступного відкриття."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存：Ginkgo 下次打开时生效。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已儲存：Ginkgo 下次開啟時生效。"
+          }
+        }
+      }
+    },
     "treelab.account.notice.signedOut": {
       "extractionState": "manual",
       "localizations": {
@@ -6367,6 +6997,258 @@
         }
       }
     },
+    "treelab.account.plan.lifetime": {
+      "comment": "Plan card title for a lifetime licence.",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ترخيص مدى الحياة: لا شيء آخر للدفع"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doživotna licenca: više ništa ne plaćaš"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Livstidslicens: intet mere at betale"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lebenslange Lizenz: nichts mehr zu zahlen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lifetime licence: nothing more to pay"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencia de por vida: nada más que pagar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licence à vie : plus rien à payer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licenza a vita: niente più da pagare"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "永久ライセンス：これ以上の支払いは不要です"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "អាជ្ញាប័ណ្ណមួយជីវិត៖ មិនបាច់បង់អ្វីទៀតទេ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "평생 라이선스: 더 결제할 것이 없습니다"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Livstidslisens: ingenting mer å betale"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licencja dożywotnia: nic więcej do zapłaty"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licença vitalícia: nada mais a pagar"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Бессрочная лицензия: больше ничего платить не нужно"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ไลเซนส์ตลอดชีพ: ไม่ต้องจ่ายอะไรเพิ่ม"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ömür boyu lisans: başka ödeme yok"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Безстрокова ліцензія: більше нічого платити не треба"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "永久许可证：无需再付费"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "永久授權：無需再付費"
+          }
+        }
+      }
+    },
+    "treelab.account.plan.member": {
+      "comment": "Line under the plan for an invited member.",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فريقك يدفع ثمن مقعدك."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tvoj tim plaća tvoje mjesto."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dit team betaler din plads."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Team bezahlt deinen Platz."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your team pays for your seat."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu equipo paga tu puesto."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton équipe paie ton poste."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo team paga la tua postazione."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あなたのシートはチームが支払います。"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ក្រុមរបស់អ្នកបង់ថ្លៃសិទ្ធិប្រើរបស់អ្នក។"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "내 시트는 팀이 결제합니다."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teamet ditt betaler plassen din."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Twój zespół płaci za twoje stanowisko."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sua equipe paga o seu assento."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Твоё место оплачивает команда."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ทีมของคุณจ่ายค่าสิทธิ์ใช้งานของคุณ"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koltuğunun ücretini ekibin ödüyor."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Твоє місце оплачує команда."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的席位由团队付费。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的席位由團隊付費。"
+          }
+        }
+      }
+    },
     "treelab.account.plan.monthly": {
       "extractionState": "manual",
       "localizations": {
@@ -6617,131 +7499,6 @@
         }
       }
     },
-    "treelab.account.plan.owner": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "المالك: لا شيء للدفع"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vlasnik: ništa za plaćanje"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ejer: intet at betale"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inhaber: nichts zu zahlen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Owner: nothing to pay"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Propietario: nada que pagar"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Propriétaire : rien à payer"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Proprietario: niente da pagare"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "オーナー：支払い不要"
-          }
-        },
-        "km": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ម្ចាស់៖ មិនបាច់បង់ប្រាក់"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "소유자: 결제 없음"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eier: ingenting å betale"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Właściciel: nic do zapłaty"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Proprietário: nada a pagar"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Владелец: платить не нужно"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "เจ้าของ: ไม่ต้องจ่าย"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sahip: ödeme yok"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Власник: платити не треба"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "所有者：无需付费"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "擁有者：無需付費"
-          }
-        }
-      }
-    },
     "treelab.account.plan.renews": {
       "comment": "%@ is a date.",
       "extractionState": "manual",
@@ -6864,6 +7621,132 @@
           "stringUnit": {
             "state": "translated",
             "value": "將於 %@ 續訂"
+          }
+        }
+      }
+    },
+    "treelab.account.plan.subscription": {
+      "comment": "Plan card title for a subscription whose period lab does not say yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اشتراك"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pretplata"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonnement"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abo"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscription"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suscripción"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonnement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbonamento"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サブスクリプション"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ការជាវ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "구독"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonnement"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subskrypcja"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assinatura"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подписка"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "การสมัครสมาชิก"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonelik"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Підписка"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "订阅"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "訂閱"
           }
         }
       }
@@ -7114,6 +7997,258 @@
           "stringUnit": {
             "state": "translated",
             "value": "試用已結束"
+          }
+        }
+      }
+    },
+    "treelab.account.plan.unknown": {
+      "comment": "Plan card title when lab has not read the plan yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الخطة غير معروفة بعد"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan još nije poznat"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planen kendes ikke endnu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarif noch nicht bekannt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan not known yet"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan todavía desconocido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formule pas encore connue"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piano non ancora noto"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プランはまだ不明"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "មិនទាន់ដឹងគម្រោងនៅឡើយ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "아직 알 수 없는 요금제"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planen er ikke kjent ennå"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan jeszcze nieznany"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plano ainda desconhecido"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тариф пока неизвестен"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ยังไม่ทราบแพ็กเกจ"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan henüz bilinmiyor"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тариф поки невідомий"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未获知方案"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未得知方案"
+          }
+        }
+      }
+    },
+    "treelab.account.plan.unknownDetail": {
+      "comment": "Line under the plan when lab has not read it yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سيقرؤها lab في فحصه القادم."
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab će ga pročitati pri sljedećoj provjeri."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab læser den ved næste kontrol."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab liest ihn bei der nächsten Prüfung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab will read it at its next check."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab lo leerá en su próxima comprobación."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab la lira à sa prochaine vérification."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab lo leggerà al prossimo controllo."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab が次の確認で読み込みます。"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab នឹងអានវានៅពេលពិនិត្យលើកក្រោយ។"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab이 다음 확인 때 읽어 옵니다."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab leser den ved neste kontroll."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab odczyta go przy następnym sprawdzeniu."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O lab vai lê-lo na próxima verificação."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab прочитает его при следующей проверке."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab จะอ่านค่านี้เมื่อตรวจสอบครั้งถัดไป"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab bunu bir sonraki kontrolünde okuyacak."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab прочитає його під час наступної перевірки."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab 会在下次检查时读取。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab 會在下次檢查時讀取。"
           }
         }
       }
@@ -30954,126 +32089,127 @@
       }
     },
     "treelab.privacy.erase.detail": {
+      "comment": "",
       "extractionState": "manual",
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "يمحو بيانات Treelab وlab على هذا الـ Mac؛ ويخرج مفتاح OpenAI الخاص بك من سلسلة المفاتيح. خطوتان: لا يُمحى شيء دون تأكيدك."
+            "value": "على هذا الـ Mac فقط: يمحو ما يحتفظ به lab لـ Treelab وGinkgo، والنسخة المحلية من حسابك، ومفتاح OpenAI الخاص بك. تبقى مشاريعك وحسابك. خطوتان: لا يُمحى شيء دون تأكيدك."
           }
         },
         "bs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Briše podatke koje Treelab i lab imaju na ovom Macu; tvoj OpenAI ključ napušta privjesak ključeva. Dva koraka: ništa se ne briše bez tvoje potvrde."
+            "value": "Samo na ovom Macu: briše ono što lab čuva za Treelab i Ginkgo, lokalnu kopiju tvog naloga i tvoj OpenAI ključ. Tvoji projekti i tvoj nalog ostaju. Dva koraka: ništa se ne briše bez tvoje potvrde."
           }
         },
         "da": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sletter data fra Treelab og lab på denne Mac; din OpenAI-nøgle fjernes fra nøgleringen. To trin: intet slettes uden din bekræftelse."
+            "value": "Kun på denne Mac: sletter det, lab gemmer til Treelab og Ginkgo, den lokale kopi af din konto og din OpenAI-nøgle. Dine projekter og din konto bliver. To trin: intet slettes uden din bekræftelse."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Löscht die Daten von Treelab und lab auf diesem Mac; dein OpenAI-Schlüssel verlässt den Schlüsselbund. Zwei Schritte: Ohne deine Bestätigung geschieht nichts."
+            "value": "Nur auf diesem Mac: löscht, was lab für Treelab und Ginkgo aufbewahrt, die lokale Kopie deines Kontos und deinen OpenAI-Schlüssel. Deine Projekte und dein Konto bleiben. Zwei Schritte: Ohne deine Bestätigung geschieht nichts."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erases Treelab’s and lab’s data on this Mac; your OpenAI key leaves the keychain. Two steps: nothing goes without your confirmation."
+            "value": "On this Mac only: erases what lab keeps for Treelab and Ginkgo, the local copy of your account and your OpenAI key. Your projects and your account stay. Two steps: nothing goes without your confirmation."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Borra los datos de Treelab y de lab en este Mac; tu clave de OpenAI sale del llavero. Dos pasos: nada se borra sin tu confirmación."
+            "value": "Solo en este Mac: borra lo que lab guarda para Treelab y Ginkgo, la copia local de tu cuenta y tu clave de OpenAI. Tus proyectos y tu cuenta se quedan. Dos pasos: nada se borra sin tu confirmación."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Efface les données de Treelab et de lab sur ce Mac ; ta clé OpenAI quitte le trousseau. Deux étapes : rien ne part sans ta confirmation."
+            "value": "Sur ce Mac seulement : efface ce que lab garde pour Treelab et Ginkgo, la copie locale de ton compte et ta clé OpenAI. Tes projets et ton compte restent. Deux étapes : rien ne part sans ta confirmation."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cancella i dati di Treelab e di lab su questo Mac; la tua chiave OpenAI esce dal portachiavi. Due passaggi: non si cancella niente senza la tua conferma."
+            "value": "Solo su questo Mac: cancella ciò che lab conserva per Treelab e Ginkgo, la copia locale del tuo account e la tua chiave OpenAI. I tuoi progetti e il tuo account restano. Due passaggi: non si cancella niente senza la tua conferma."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "この Mac 上の Treelab と lab のデータを消去し、OpenAI キーをキーチェーンから削除します。2 段階で行い、あなたが確認するまで何も消えません。"
+            "value": "この Mac だけが対象です。lab が Treelab と Ginkgo のために保存しているもの、アカウントのローカルコピー、OpenAI キーを消去します。プロジェクトとアカウントは残ります。2 段階で行い、あなたが確認するまで何も消えません。"
           }
         },
         "km": {
           "stringUnit": {
             "state": "translated",
-            "value": "លុបទិន្នន័យរបស់ Treelab និង lab នៅលើ Mac នេះ។ សោ OpenAI របស់អ្នកត្រូវដកចេញពី Keychain។ មានពីរជំហាន៖ គ្មានអ្វីត្រូវបានលុបដោយគ្មានការបញ្ជាក់របស់អ្នកទេ។"
+            "value": "តែលើ Mac នេះប៉ុណ្ណោះ៖ លុបអ្វីដែល lab រក្សាទុកសម្រាប់ Treelab និង Ginkgo ច្បាប់ចម្លងក្នុងម៉ាស៊ីននៃគណនីរបស់អ្នក និងសោ OpenAI របស់អ្នក។ គម្រោង និងគណនីរបស់អ្នកនៅដដែល។ មានពីរជំហាន៖ គ្មានអ្វីត្រូវបានលុបដោយគ្មានការបញ្ជាក់របស់អ្នកទេ។"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "이 Mac에 있는 Treelab과 lab 데이터를 지우고, OpenAI 키를 키체인에서 제거합니다. 두 단계로 진행합니다: 확인하기 전에는 아무것도 지워지지 않습니다."
+            "value": "이 Mac에서만: lab이 Treelab과 Ginkgo를 위해 보관하는 것, 계정의 로컬 사본, OpenAI 키를 지웁니다. 프로젝트와 계정은 그대로 남습니다. 두 단계로 진행합니다: 확인하기 전에는 아무것도 지워지지 않습니다."
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sletter dataene til Treelab og lab på denne Macen; OpenAI-nøkkelen din fjernes fra nøkkelringen. To trinn: ingenting slettes uten at du bekrefter."
+            "value": "Bare på denne Macen: sletter det lab lagrer for Treelab og Ginkgo, den lokale kopien av kontoen din og OpenAI-nøkkelen din. Prosjektene og kontoen din blir værende. To trinn: ingenting slettes uten at du bekrefter."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Usuwa dane Treelab i lab na tym Macu; twój klucz OpenAI znika z pęku kluczy. Dwa kroki: nic nie zostanie usunięte bez twojego potwierdzenia."
+            "value": "Tylko na tym Macu: usuwa to, co lab przechowuje dla Treelab i Ginkgo, lokalną kopię twojego konta i twój klucz OpenAI. Twoje projekty i konto zostają. Dwa kroki: nic nie zostanie usunięte bez twojego potwierdzenia."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apaga os dados do Treelab e do lab neste Mac; sua chave da OpenAI é removida das Chaves. Duas etapas: nada é apagado sem a sua confirmação."
+            "value": "Só neste Mac: apaga o que o lab guarda para o Treelab e o Ginkgo, a cópia local da sua conta e a sua chave da OpenAI. Seus projetos e sua conta continuam. Duas etapas: nada é apagado sem a sua confirmação."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Стирает данные Treelab и lab на этом Mac; твой ключ OpenAI удаляется из связки ключей. Два шага: без твоего подтверждения ничего не удаляется."
+            "value": "Только на этом Mac: стирает то, что lab хранит для Treelab и Ginkgo, локальную копию твоего аккаунта и твой ключ OpenAI. Твои проекты и аккаунт остаются. Два шага: без твоего подтверждения ничего не удаляется."
           }
         },
         "th": {
           "stringUnit": {
             "state": "translated",
-            "value": "ลบข้อมูลของ Treelab และ lab บน Mac เครื่องนี้ และนำคีย์ OpenAI ของคุณออกจากพวงกุญแจ มีสองขั้นตอน: จะไม่มีอะไรถูกลบหากคุณไม่ยืนยัน"
+            "value": "เฉพาะบน Mac เครื่องนี้: ลบสิ่งที่ lab เก็บไว้ให้ Treelab และ Ginkgo สำเนาบัญชีของคุณในเครื่อง และคีย์ OpenAI ของคุณ โปรเจกต์และบัญชีของคุณยังอยู่ มีสองขั้นตอน: จะไม่มีอะไรถูกลบหากคุณไม่ยืนยัน"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bu Mac'teki Treelab ve lab verilerini siler; OpenAI anahtarın anahtar zincirinden çıkarılır. İki adım: onayın olmadan hiçbir şey silinmez."
+            "value": "Yalnızca bu Mac'te: lab'ın Treelab ve Ginkgo için sakladıklarını, hesabının yerel kopyasını ve OpenAI anahtarını siler. Projelerin ve hesabın kalır. İki adım: onayın olmadan hiçbir şey silinmez."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Стирає дані Treelab і lab на цьому Mac; твій ключ OpenAI видаляється з в’язки ключів. Два кроки: без твого підтвердження нічого не видаляється."
+            "value": "Лише на цьому Mac: стирає те, що lab зберігає для Treelab і Ginkgo, локальну копію твого акаунта і твій ключ OpenAI. Твої проєкти й акаунт лишаються. Два кроки: без твого підтвердження нічого не видаляється."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "清除这台 Mac 上 Treelab 和 lab 的数据；你的 OpenAI 密钥会从钥匙串中移除。分两步进行：没有你的确认，什么都不会删除。"
+            "value": "仅限这台 Mac：清除 lab 为 Treelab 和 Ginkgo 保存的内容、你账户的本地副本和你的 OpenAI 密钥。你的项目和账户都会保留。分两步进行：没有你的确认，什么都不会删除。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "清除這台 Mac 上 Treelab 和 lab 的資料；你的 OpenAI 金鑰會從鑰匙圈中移除。分兩步進行：沒有你的確認，什麼都不會刪除。"
+            "value": "僅限這台 Mac：清除 lab 為 Treelab 和 Ginkgo 保存的內容、你帳號的本機副本和你的 OpenAI 金鑰。你的專案和帳號都會保留。分兩步進行：沒有你的確認，什麼都不會刪除。"
           }
         }
       }
@@ -37097,6 +38233,132 @@
           "stringUnit": {
             "state": "translated",
             "value": "Treelab 在這台 Mac 上找不到 lab。"
+          }
+        }
+      }
+    },
+    "treelab.settings.labMissing.title": {
+      "comment": "Card title when lab cannot be found.",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يُعثر على lab"
+          }
+        },
+        "bs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LAB NIJE PRONAĐEN"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LAB BLEV IKKE FUNDET"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LAB NICHT GEFUNDEN"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LAB NOT FOUND"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NO SE ENCUENTRA LAB"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LAB INTROUVABLE"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LAB NON TROVATO"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab が見つかりません"
+          }
+        },
+        "km": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "រកមិនឃើញ lab"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lab을 찾을 수 없음"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "FANT IKKE LAB"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NIE ZNALEZIONO LAB"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LAB NÃO ENCONTRADO"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LAB НЕ НАЙДЕН"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ไม่พบ lab"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LAB BULUNAMADI"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LAB НЕ ЗНАЙДЕНО"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到 lab"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到 lab"
           }
         }
       }
