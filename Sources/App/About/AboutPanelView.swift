@@ -50,6 +50,13 @@ struct AboutPanelView: View {
                             .opacity(0.8)
                             .accessibilityIdentifier("AboutUpstreamCredit")
                     }
+                    if let copyright = AppBranding.current.copyrightLine {
+                        Text(verbatim: copyright)
+                            .cmuxFont(.caption)
+                            .tint(.secondary)
+                            .opacity(0.8)
+                            .accessibilityIdentifier("AboutTreelabCopyright")
+                    }
                 }
                 .textSelection(.enabled)
 

@@ -1,6 +1,7 @@
 public import Foundation
 
-/// Runs lab as a child process: its exact path, the arguments as a list, no shell.
+/// Runs lab as a child process: its exact path, the arguments as a list, no shell. Its standard
+/// input is empty, except the secret of ``LabCommand/storeOpenAIKey(_:)``, which only ever goes there.
 ///
 /// The program is checked again right before each run (``LabExecutableLocator/check(_:)``), so a
 /// program replaced after it was located is refused; a runner made with a locator only finds lab
@@ -63,7 +64,22 @@ public struct ProcessLabCommandRunner: LabCommandRunning {
         let process = Process()
         process.executableURL = executable
         process.arguments = command.arguments
-        process.standardInput = FileHandle.nullDevice
+        if let secret = command.standardInput {
+            // The secret is written into the pipe before lab starts (it is far smaller than a
+            // pipe's buffer), then the writing end is closed: lab reads it and an end of file, and
+            // a lab that never reads cannot block Treelab nor break its pipe.
+            let input = Pipe()
+            let writer = input.fileHandleForWriting
+            do {
+                try writer.write(contentsOf: secret.standardInputData)
+                try writer.close()
+            } catch {
+                throw LanesProblem.labUnavailable("lab \(command.arguments.prefix(2).joined(separator: " ")): standard input refused")
+            }
+            process.standardInput = input
+        } else {
+            process.standardInput = FileHandle.nullDevice
+        }
         let output = Pipe()
         let errors = Pipe()
         process.standardOutput = output

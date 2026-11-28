@@ -41,6 +41,7 @@ import Darwin
 import CmuxFoundation
 import TreelabGinkgo
 import TreelabLanes
+import TreelabLanesUI
 #if canImport(CmuxSentryReporting)
 import CmuxSentryReporting
 #endif
@@ -583,6 +584,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             .map { GinkgoModel.demo(folder: URL(fileURLWithPath: $0), clientVersion: version, focus: focus, reduceMotion: demoReduceMotion) }
             ?? GinkgoModel.live(home: FileManager.default.homeDirectoryForCurrentUser, clientVersion: version, focus: focus)
     }()
+    /// Treelab: the account and its two windows (welcome, settings), read from lab and acted on by lab.
+    /// `-TreelabAccountDemo <folder>` on this launch's arguments shows invented accounts and runs no program.
+    lazy var treelabAccount = TreelabAccountCenter.make(home: FileManager.default.homeDirectoryForCurrentUser)
     let cloudBannerDismissalStore: CloudBannerDismissalStore
     /// Composition-root owner for the persisted per-SSH-machine clipboard-write policy.
     let sshClipboardWriteTrustStore: SSHClipboardWriteTrustStore
@@ -21103,6 +21107,10 @@ extension AppDelegate {
             self?.treelabLanes.select("\(about.project.value)/\(about.lane.value)")
         }
         treelabGinkgo.start()
+        // The welcome opens by itself at the first launch only, never over another demo.
+        let otherDemo = UserDefaults.standard.string(forKey: "TreelabLanesDemo") != nil
+            || UserDefaults.standard.string(forKey: "TreelabGinkgoDemo") != nil
+        treelabAccount.start(showsWelcomeOnFirstLaunch: !otherDemo)
     }
 
     /// The project Ginkgo starts on: the lane shown in the key window, else the request chosen in

@@ -172,6 +172,12 @@ public struct AppBranding: Equatable, Sendable {
         )
     }
 
+    /// The About panel's copyright line ("© 2026 Treelab"), or `nil` for upstream cmux, whose
+    /// copyright comes from its Info.plist.
+    public var copyrightLine: String? {
+        helpSite == .treelab ? "© 2026 \(displayName)" : nil
+    }
+
     /// The title of the Help entry that leads to ``HelpLinks/support``, in the app's language,
     /// or `nil` to keep upstream's "GitHub Issues" (its support link is the issue tracker).
     public var supportMenuTitle: String? {
