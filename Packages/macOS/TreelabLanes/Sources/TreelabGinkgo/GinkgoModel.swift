@@ -227,8 +227,9 @@ public final class GinkgoModel {
         if !session.state.isConversation { connection?.send(.open(focus: project)) }
     }
 
-    /// Whether the microphone is open now.
-    public var isMicrophoneOpen: Bool { presence == .connected && session.mic }
+    /// Whether the microphone is open now: Ginkgo's `mic` is the switch of `mic {on}` (§4), still
+    /// on once a conversation is closed, so `closed` means nothing is heard whatever `mic` says.
+    public var isMicrophoneOpen: Bool { presence == .connected && session.mic && session.state != .closed }
 
     /// Whether a conversation is open now.
     public var isConversationOpen: Bool { presence == .connected && session.state.isConversation }
