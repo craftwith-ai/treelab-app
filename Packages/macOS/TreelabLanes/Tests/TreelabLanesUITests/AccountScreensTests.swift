@@ -77,9 +77,9 @@ struct AccountScreensTests {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("treelab-demo-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let arguments = ["Treelab", "-TreelabAccountDemo", folder.path] + (screen.map { ["-TreelabAccountDemoScreen", $0] } ?? [])
-        let demo = try #require(AccountDemoLaunch(arguments: arguments))
-        return TreelabAccountCenter(model: .demo(folder: folder), notifications: DemoNotificationPermission(folder: folder),
-                                    defaults: store, demo: demo)
+        #expect(AccountDemoLaunch(arguments: arguments) != nil)
+        // Through make(), as the app builds it.
+        return TreelabAccountCenter.make(arguments: arguments, home: folder, demoDefaults: store)
     }
 
     @Test("a demo launch without a screen follows the first-launch rule, in the demo's own preferences")
@@ -88,6 +88,32 @@ struct AccountScreensTests {
         let store = defaults()
         try demoCenter(screen: nil, store: store).start(showsWelcomeOnFirstLaunch: true)
         #expect(store.bool(forKey: TreelabAccountCenter.welcomeSeenKey))
+    }
+
+    @Test("make(): a demo launch keeps the demo's own preferences")
+    @MainActor
+    func makeKeepsTheDemoPreferences() throws {
+        let store = defaults()
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("treelab-demo-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        TreelabAccountCenter.make(arguments: ["Treelab", "-TreelabAccountDemo", folder.path], home: folder, demoDefaults: store)
+            .start(showsWelcomeOnFirstLaunch: true)
+        #expect(store.bool(forKey: TreelabAccountCenter.welcomeSeenKey))
+    }
+
+    @Test("make(): a demo asked with a folder it cannot use runs no program and keeps the demo's preferences")
+    @MainActor
+    func unusableDemoStaysADemo() async throws {
+        let home = FileManager.default.temporaryDirectory.appendingPathComponent("treelab-home-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
+        for arguments in [["Treelab", "-TreelabAccountDemo", "relative/folder"], ["Treelab", "-TreelabAccountDemo"]] {
+            let store = defaults()
+            let center = TreelabAccountCenter.make(arguments: arguments, home: home, demoDefaults: store)
+            center.start(showsWelcomeOnFirstLaunch: true)
+            #expect(store.bool(forKey: TreelabAccountCenter.welcomeSeenKey), "\(arguments)")
+            await center.model.refresh()
+            if case .labMissing = center.model.status {} else { Issue.record("\(arguments): a program ran, \(center.model.status)") }
+        }
     }
 
     @Test("a demo launch on a named screen opens that screen and leaves the first launch untouched")

@@ -178,13 +178,14 @@ public final class TreelabAccountCenter {
     /// - Parameters:
     ///   - arguments: this launch's arguments.
     ///   - home: the person's home folder.
+    ///   - demoDefaults: the demo's own preferences (`sh.treelab.account.demo` by default).
     /// - Returns: a center, not started.
-    public static func make(arguments: [String] = CommandLine.arguments, home: URL) -> TreelabAccountCenter {
+    public static func make(arguments: [String] = CommandLine.arguments, home: URL, demoDefaults: UserDefaults? = nil) -> TreelabAccountCenter {
         if let demo = AccountDemoLaunch(arguments: arguments) {
             return TreelabAccountCenter(
                 model: .demo(folder: demo.folder),
                 notifications: DemoNotificationPermission(folder: demo.folder),
-                defaults: UserDefaults(suiteName: "sh.treelab.account.demo") ?? .standard,
+                defaults: demoDefaults ?? UserDefaults(suiteName: "sh.treelab.account.demo") ?? .standard,
                 demo: demo
             )
         }
