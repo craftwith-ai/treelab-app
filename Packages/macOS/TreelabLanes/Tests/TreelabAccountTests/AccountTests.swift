@@ -45,22 +45,22 @@ struct AccountReadingTests {
         #expect(!other.taxIncluded)
     }
 
-    @Test("monthly, yearly and owner plans, with their dates and seats")
+    @Test("monthly and yearly subscriptions and a lifetime licence, with their dates and seats (v1.1)")
     func plans() throws {
-        let monthly = try #require(snapshot("PROTOCOL=1\nSIGNED_IN=yes\nEMAIL=a@b.fr\nPLAN=monthly\nSTATE=active\nRENEWS=2026-12-27\nSEATS=6\n"))
-        #expect(monthly.plan == .monthly)
+        let monthly = try #require(snapshot("PROTOCOL=1\nSIGNED_IN=yes\nEMAIL=a@b.fr\nPLAN=subscription\nPERIOD=month\nSTATE=active\nRENEWS=2026-12-27\nSEATS=6\n"))
+        #expect(monthly.plan == .subscription && monthly.period == .month)
         #expect(monthly.standing == .active)
         #expect(monthly.renews == AccountDay(year: 2026, month: 12, day: 27))
         #expect(monthly.seats == 6)
-        let yearly = try #require(snapshot("PROTOCOL=1\nSIGNED_IN=yes\nPLAN=yearly\nSTATE=active\nENDS=2027-01-31\n"))
-        #expect(yearly.plan == .yearly)
+        let yearly = try #require(snapshot("PROTOCOL=1\nSIGNED_IN=yes\nPLAN=subscription\nPERIOD=year\nSTATE=active\nENDS=2027-01-31\n"))
+        #expect(yearly.period == .year)
         #expect(yearly.ends == AccountDay(year: 2027, month: 1, day: 31))
-        let owner = try #require(snapshot("PROTOCOL=1\nSIGNED_IN=yes\nPLAN=owner\nSTATE=active\n"))
-        #expect(owner.plan == .owner)
+        let lifetime = try #require(snapshot("PROTOCOL=1\nSIGNED_IN=no\nACTIVATION=key\nPLAN=lifetime\nSTATE=active\n"))
+        #expect(lifetime.plan == .lifetime)
         let ended = try #require(snapshot("PROTOCOL=1\nSIGNED_IN=yes\nPLAN=trial\nSTATE=ended\nTRIAL_DAYS_LEFT=0\n"))
         #expect(ended.standing == .ended)
         #expect(ended.trialDaysLeft == 0)
-        #expect(try #require(snapshot("PROTOCOL=1\nSIGNED_IN=yes\nPLAN=monthly\nSTATE=unpaid\n")).standing == .unpaid)
+        #expect(try #require(snapshot("PROTOCOL=1\nSIGNED_IN=yes\nPLAN=subscription\nSTATE=unpaid\n")).standing == .unpaid)
     }
 
     @Test("signed out: no e-mail, no plan")
@@ -77,7 +77,7 @@ struct AccountReadingTests {
         let bare = try #require(snapshot("PROTOCOL=1\n"))
         #expect(!bare.signedIn)
         #expect(bare.email == nil && bare.trialDaysLeft == nil && bare.seats == nil && bare.checked == nil)
-        #expect(bare.plan == AccountPlan.none && bare.standing == AccountStanding.none)
+        #expect(bare.plan == nil && bare.standing == nil)
         #expect(bare.offer == AccountOffer())
         #expect(!bare.offer.isComplete)
         #expect(bare.watch.isEmpty)
@@ -100,8 +100,8 @@ struct AccountReadingTests {
         """))
         #expect(!wrong.signedIn)
         #expect(wrong.email == nil)
-        #expect(wrong.plan == AccountPlan.none)
-        #expect(wrong.standing == AccountStanding.none)
+        #expect(wrong.plan == nil)
+        #expect(wrong.standing == nil)
         #expect(wrong.trialDaysLeft == nil)
         #expect(wrong.seats == nil)
         #expect(wrong.renews == nil && wrong.ends == nil)
@@ -152,7 +152,6 @@ struct AccountReadingTests {
     func quiet() {
         #expect(QuietSetting("off") == .off)
         #expect(QuietSetting("07:05-22:30")?.argument == "07:05-22:30")
-        #expect(QuietSetting(from: "21:00", to: "08:00")?.argument == "21:00-08:00")
         for wrong in ["", "21:00", "24:00-08:00", "21:60-08:00", "9:00-08:00", "21:00-08:00 ", "21:00-08:00;rm", "--quiet", "21h00-08h00", "OFF"] {
             #expect(QuietSetting(wrong) == nil, "\(wrong)")
         }

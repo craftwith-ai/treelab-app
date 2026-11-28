@@ -130,12 +130,12 @@ struct RealWatchTests {
         try await Task.sleep(for: .milliseconds(300))
         // Another program rewrites it, as lab does (a temporary file, then a rename).
         let temporary = folder.url.appendingPathComponent(".account.tmp")
-        try first.replacingOccurrences(of: "PLAN=trial", with: "PLAN=monthly").write(to: temporary, atomically: false, encoding: .utf8)
+        try first.replacingOccurrences(of: "PLAN=trial", with: "PLAN=subscription").write(to: temporary, atomically: false, encoding: .utf8)
         let move = Process()
         move.executableURL = URL(fileURLWithPath: "/bin/mv")
         move.arguments = ["-f", temporary.path, file.path]
         try move.run()
         move.waitUntilExit()
-        #expect(await eventually(5) { await MainActor.run { account.snapshot?.plan == .monthly } })
+        #expect(await eventually(5) { await MainActor.run { account.snapshot?.plan == .subscription } })
     }
 }

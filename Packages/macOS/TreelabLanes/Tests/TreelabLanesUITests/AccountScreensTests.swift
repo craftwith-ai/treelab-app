@@ -55,11 +55,80 @@ struct AccountScreensTests {
     func barLine() {
         let english = AccountPresentation(locale: Locale(identifier: "en_US"))
         let trial = AccountSnapshot(signedIn: true, plan: .trial, standing: .trial, trialDaysLeft: 9)
-        let yearly = AccountSnapshot(signedIn: true, plan: .yearly, standing: .active)
+        let yearly = AccountSnapshot(signedIn: true, plan: .subscription, period: .year, standing: .active)
         #expect(english.barLine(.contract(trial)).contains("9"))
         #expect(english.barLine(.contract(yearly)) != english.barLine(.contract(trial)))
         #expect(english.barLine(.nextVersion) == english.barLine(.unknown))
         #expect(english.barLine(.contract(AccountSnapshot())) != english.barLine(.nextVersion))
+    }
+
+    @Test("v1.1: a lifetime key on a Mac not signed in says its licence, never 'not signed in · free trial'")
+    func lifetimeKeyLines() {
+        let english = AccountPresentation(locale: Locale(identifier: "en_US"))
+        let text = AccountText()
+        let key = AccountSnapshot(signedIn: false, activation: .key, plan: .lifetime, standing: .active)
+        #expect(english.barLine(.contract(key)) == text.accountBarLifetime)
+        #expect(english.plan(key).title == text.accountPlanLifetime)
+    }
+
+    @Test("v1.1: a subscription says its period, or only 'subscription' before the accounts; ended is ended")
+    func subscriptionLines() {
+        let english = AccountPresentation(locale: Locale(identifier: "en_US"))
+        let text = AccountText()
+        let month = AccountSnapshot(signedIn: true, plan: .subscription, period: .month, standing: .active)
+        #expect(english.barLine(.contract(month)) == text.accountBarMonthly)
+        #expect(english.plan(month).title == text.accountPlanMonthly)
+        let year = AccountSnapshot(signedIn: true, plan: .subscription, period: .year, standing: .active)
+        #expect(english.barLine(.contract(year)) == text.accountBarYearly)
+        #expect(english.plan(year).title == text.accountPlanYearly)
+        let bare = AccountSnapshot(signedIn: false, activation: .key, plan: .subscription, standing: .active)
+        #expect(english.barLine(.contract(bare)) == text.accountBarSubscription)
+        #expect(english.plan(bare).title == text.accountPlanSubscription)
+        let over = AccountSnapshot(signedIn: true, plan: .subscription, period: .month, standing: .ended)
+        #expect(english.barLine(.contract(over)) == text.accountBarEnded)
+        let member = AccountSnapshot(signedIn: true, role: .member, plan: .subscription, period: .month, standing: .active)
+        #expect(english.roleLine(member) == text.accountPlanMember)
+        #expect(english.roleLine(month) == nil)
+    }
+
+    @Test("v1.1: rights not read yet, or a plan this Treelab does not know, are said not known yet")
+    func unknownPlanLines() {
+        let english = AccountPresentation(locale: Locale(identifier: "en_US"))
+        let text = AccountText()
+        for plan in [AccountPlan.unknown, nil] {
+            let account = AccountSnapshot(signedIn: false, activation: .key, plan: plan, standing: .unknown)
+            #expect(english.barLine(.contract(account)) == text.accountBarUnknown)
+            #expect(english.plan(account).title == text.accountPlanUnknown && english.plan(account).detail == text.accountPlanUnknownDetail)
+        }
+        #expect(english.barLine(.contract(AccountSnapshot(signedIn: false, plan: AccountPlan.none))) == text.accountBarSignedOut)
+        #expect(english.barLine(.contract(AccountSnapshot(signedIn: true, plan: AccountPlan.none))) == text.accountBarNone)
+    }
+
+    @Test("lab missing is said as such, never as the next treelab version")
+    func labMissingIsNotNextVersion() {
+        let presentation = AccountPresentation()
+        let text = AccountText()
+        #expect(presentation.unavailableTitle(.labMissing("not located")) == text.settingsLabMissingTitle)
+        #expect(presentation.unavailableTitle(.nextVersion) == text.settingsNextVersionTitle)
+        #expect(presentation.unavailableTitle(.contract(AccountSnapshot())) == nil)
+        #expect(presentation.unavailableNote(.labMissing("not located"), nextVersion: text.welcomeTrialNextVersion) == text.settingsLabMissing)
+        #expect(presentation.unavailableNote(.nextVersion, nextVersion: text.welcomeTrialNextVersion) == text.welcomeTrialNextVersion)
+        #expect(presentation.unavailableNote(.unknown, nextVersion: text.settingsNextVersionSetting) == nil)
+        #expect(presentation.unavailableNote(.contract(AccountSnapshot()), nextVersion: text.settingsNextVersionSetting) == nil)
+    }
+
+    @Test("quiet hours are shown on only when lab has hours: lab not knowing them is not 21:00–08:00")
+    func quietHoursForm() {
+        #expect(!SpeechCard.form(for: nil).isOn)
+        #expect(!SpeechCard.form(for: .off).isOn)
+        #expect(SpeechCard.form(for: .hours(from: "22:30", to: "07:15")) == QuietHoursForm(isOn: true, from: "22:30", to: "07:15"))
+    }
+
+    @Test("v1.1: Ginkgo's listening saved for its next opening is said so, not as a problem")
+    func savedForNextOpenNotice() {
+        let said = AccountPresentation().notice(.savedForNextOpen)
+        #expect(said.text == AccountText().accountNoticeSavedNextOpen)
+        #expect(!said.isProblem)
     }
 
     @Test("an export notice names the folder, never its whole path")
