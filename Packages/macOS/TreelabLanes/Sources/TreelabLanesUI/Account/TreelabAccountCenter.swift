@@ -89,6 +89,10 @@ final class DemoNotificationPermission: NotificationPermissionAsking {
         }
     }
 
+    init(state: NotificationPermissionState) {
+        self.state = state
+    }
+
     func current() async -> NotificationPermissionState { state }
 
     func request() async -> NotificationPermissionState {
@@ -110,6 +114,9 @@ final class AccountWindowsState {
 /// `-TreelabAccountDemoScreen welcome-1…4|account|privacy|appearance` and
 /// `-TreelabAccountDemoSize <width>x<height>`.
 struct AccountDemoLaunch: Equatable {
+    /// The argument that asks for the demo.
+    static let argument = "-TreelabAccountDemo"
+
     let folder: URL
     let screen: String?
     let size: CGSize?
@@ -119,7 +126,7 @@ struct AccountDemoLaunch: Equatable {
             guard let index = arguments.firstIndex(of: name), arguments.indices.contains(index + 1) else { return nil }
             return arguments[index + 1]
         }
-        guard let path = value("-TreelabAccountDemo"), path.hasPrefix("/") else { return nil }
+        guard let path = value(Self.argument), path.hasPrefix("/") else { return nil }
         folder = URL(fileURLWithPath: path)
         screen = value("-TreelabAccountDemoScreen")
         size = value("-TreelabAccountDemoSize").flatMap { text in
@@ -181,11 +188,18 @@ public final class TreelabAccountCenter {
     ///   - demoDefaults: the demo's own preferences (`sh.treelab.account.demo` by default).
     /// - Returns: a center, not started.
     public static func make(arguments: [String] = CommandLine.arguments, home: URL, demoDefaults: UserDefaults? = nil) -> TreelabAccountCenter {
-        if let demo = AccountDemoLaunch(arguments: arguments) {
+        if arguments.contains(AccountDemoLaunch.argument) {
+            let store = demoDefaults ?? UserDefaults(suiteName: "sh.treelab.account.demo") ?? .standard
+            guard let demo = AccountDemoLaunch(arguments: arguments) else {
+                // A demo was asked with a folder it cannot use: still a demo, never the person's lab
+                // nor their preferences (the first launch stays theirs).
+                return TreelabAccountCenter(model: AccountModel(runner: nil, watcher: AccountModel.fileWatcher()),
+                                            notifications: DemoNotificationPermission(state: .notAsked), defaults: store, demo: nil)
+            }
             return TreelabAccountCenter(
                 model: .demo(folder: demo.folder),
                 notifications: DemoNotificationPermission(folder: demo.folder),
-                defaults: demoDefaults ?? UserDefaults(suiteName: "sh.treelab.account.demo") ?? .standard,
+                defaults: store,
                 demo: demo
             )
         }

@@ -63,6 +63,14 @@ public enum AccountNotice: Sendable, Equatable {
     case invalidFolder
 }
 
+/// How lab refused an action.
+public enum LabRefusal: Sendable, Equatable {
+    /// `REASON=unsupported`: this lab cannot do it yet (the next treelab version).
+    case unsupported
+    /// Any other refusal, in lab's clear words.
+    case said(String)
+}
+
 /// The first step of an erase, waiting for the person's confirmation.
 public struct PendingErase: Sendable, Equatable {
     /// What lab says will be erased (`READBACK=`), in its words.

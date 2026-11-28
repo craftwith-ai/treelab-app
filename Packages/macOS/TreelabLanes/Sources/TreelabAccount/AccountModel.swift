@@ -39,6 +39,7 @@ public final class AccountModel {
     @ObservationIgnored private var refreshing = false
     @ObservationIgnored private var refreshAgain = false
     @ObservationIgnored private var watchedFiles: [String] = []
+    @ObservationIgnored private var watchedFolders: [FolderIdentity?] = []
     @ObservationIgnored private var watchTask: Task<Void, Never>?
     @ObservationIgnored private var seenFiles: [String: FileSignature] = [:]
 
@@ -119,15 +120,19 @@ public final class AccountModel {
         }
     }
 
-    /// Watches the folders of `files` and reads again when one of the files was rewritten.
+    /// Watches the folders of `files` and reads again when one of the files was rewritten. The
+    /// kernel watches a folder as it was when armed: a folder missing then (skipped) or made again
+    /// since (another inode) is armed again at the next reading.
     private func follow(_ files: [String]) {
-        guard files != watchedFiles else { return }
+        let folders = Array(Set(files.map { ($0 as NSString).deletingLastPathComponent })).sorted()
+        let identities = folders.map(Self.identity(of:))
+        guard files != watchedFiles || identities != watchedFolders else { return }
         watchedFiles = files
+        watchedFolders = identities
         seenFiles = Self.signatures(of: files)
         watchTask?.cancel()
         watchTask = nil
         guard !files.isEmpty else { return }
-        let folders = Array(Set(files.map { ($0 as NSString).deletingLastPathComponent })).sorted()
         let concerned = Set(folders).union(files)
         let stream = watcher.changes(under: folders)
         watchTask = Task { [weak self] in
@@ -150,6 +155,18 @@ public final class AccountModel {
         let size: Int64
         let seconds: Int
         let nanoseconds: Int
+    }
+
+    /// A folder as the kernel watches it: its device and inode, `nil` when it is missing.
+    struct FolderIdentity: Equatable {
+        let device: Int32
+        let inode: UInt64
+    }
+
+    static func identity(of folder: String) -> FolderIdentity? {
+        var info = stat()
+        guard stat(folder, &info) == 0, (info.st_mode & S_IFMT) == S_IFDIR else { return nil }
+        return FolderIdentity(device: info.st_dev, inode: UInt64(info.st_ino))
     }
 
     /// The signature of each file that exists.
@@ -315,18 +332,23 @@ public final class AccountModel {
         }
     }
 
-    /// Runs `command`; a refusal or a failure is said and gives `nil`.
+    /// Runs `command`, one action at a time (a second one asked meanwhile, such as Return pressed
+    /// twice, sends nothing); a refusal or a failure is said and gives `nil`.
     private func perform(_ command: LabCommand) async -> LabCommandOutput? {
         guard let runner else {
             notice = .labMissing("")
             return nil
         }
+        guard !isBusy else { return nil }
         isBusy = true
         defer { isBusy = false }
         do {
             let output = try await runner.run(command)
             guard output.status == 0 else {
-                notice = .refused(AccountContract.refusal(of: output))
+                switch AccountContract.refusal(of: output) {
+                case .unsupported: notice = .nextVersion
+                case let .said(words): notice = .refused(words)
+                }
                 return nil
             }
             return output

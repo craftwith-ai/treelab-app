@@ -76,12 +76,17 @@ public enum AccountContract {
         parser.blocks(in: output.standardOutput).first ?? KeyValueBlock(entries: [])
     }
 
-    /// lab's refusal in its own words: `REASON=` (code 2), otherwise its error line.
+    /// How lab refused (contract v1.1): `REASON=` is a code on standard output
+    /// (`usage|invalid|unsupported|unwritable`, `agent` later), the clear text is on stderr.
     /// - Parameter output: what lab returned.
-    /// - Returns: one line for the screen.
-    public static func refusal(of output: LabCommandOutput) -> String {
-        if let reason = text(block(of: output).first("REASON")) { return reason }
-        return output.refusal
+    /// - Returns: ``LabRefusal/unsupported`` (the next treelab version), or one line for the
+    ///   screen: lab's clear text, else its code, else its exit status.
+    public static func refusal(of output: LabCommandOutput) -> LabRefusal {
+        let code = text(block(of: output).first("REASON"))
+        if code == "unsupported" { return .unsupported }
+        let saysSomething = output.standardError.split(separator: "\n").contains { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        if saysSomething, let clear = text(output.refusal) { return .said(clear) }
+        return .said(code ?? output.refusal)
     }
 
     /// A shown value: trimmed, at most 320 characters, `nil` when empty.
