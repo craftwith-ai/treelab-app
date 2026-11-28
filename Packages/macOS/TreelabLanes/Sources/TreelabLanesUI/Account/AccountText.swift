@@ -28,7 +28,10 @@ struct AccountText: Sendable {
     /// « Abonné · à l’année »
     var accountBarYearly: String { t("treelab.account.bar.yearly", "Subscribed · yearly") }
     /// « Propriétaire · rien à payer »
-    var accountBarOwner: String { t("treelab.account.bar.owner", "Owner · nothing to pay") }
+    var accountBarLifetime: String { t("treelab.account.bar.lifetime", "Lifetime licence") }
+    var accountBarSubscription: String { t("treelab.account.bar.subscription", "Subscribed") }
+    var accountBarUnknown: String { t("treelab.account.bar.unknown", "Plan not known yet") }
+    var accountBarNone: String { t("treelab.account.bar.none", "No subscription") }
     /// « Paiement en attente »
     var accountBarUnpaid: String { t("treelab.account.bar.unpaid", "Payment pending") }
     /// « Abonnement terminé »
@@ -65,6 +68,7 @@ struct AccountText: Sendable {
     var settingsNextVersionSetting: String { t("treelab.settings.nextVersion.setting", "This setting comes with the next version of treelab.") }
     /// « Treelab ne trouve pas lab sur ce Mac. »
     var settingsLabMissing: String { t("treelab.settings.labMissing", "Treelab cannot find lab on this Mac.") }
+    var settingsLabMissingTitle: String { t("treelab.settings.labMissing.title", "LAB NOT FOUND") }
     /// « Annuler »
     var settingsCancel: String { t("treelab.settings.cancel", "Cancel") }
     /// « Lien envoyé à %@. Ouvre-le sur ce Mac pour te connecter. »
@@ -85,6 +89,7 @@ struct AccountText: Sendable {
     var accountNoticeKeyStored: String { t("treelab.account.notice.keyStored", "Key stored in the Mac’s keychain.") }
     /// « Enregistré. »
     var accountNoticeSaved: String { t("treelab.account.notice.saved", "Saved.") }
+    var accountNoticeSavedNextOpen: String { t("treelab.account.notice.savedNextOpen", "Saved: Ginkgo takes it the next time it opens.") }
     /// « Copie de tes données écrite dans le dossier « %@ ». »
     func accountNoticeExported(_ a: String) -> String {
         String(localized: "treelab.account.notice.exported", defaultValue: "Copy of your data written to the folder “\(a)”.", bundle: .module)
@@ -156,7 +161,12 @@ struct AccountText: Sendable {
     /// « Abonnement à l’année »
     var accountPlanYearly: String { t("treelab.account.plan.yearly", "Yearly subscription") }
     /// « Propriétaire : rien à payer »
-    var accountPlanOwner: String { t("treelab.account.plan.owner", "Owner: nothing to pay") }
+    var accountPlanLifetime: String { t("treelab.account.plan.lifetime", "Lifetime licence: nothing more to pay") }
+    var accountPlanSubscription: String { t("treelab.account.plan.subscription", "Subscription") }
+    var accountPlanUnknown: String { t("treelab.account.plan.unknown", "Plan not known yet") }
+    var accountPlanUnknownDetail: String { t("treelab.account.plan.unknownDetail", "lab will read it at its next check.") }
+    var accountPlanMember: String { t("treelab.account.plan.member", "Your team pays for your seat.") }
+    var accountActivationKey: String { t("treelab.account.activation.key", "This Mac is activated by your licence key.") }
     /// « Pas d’abonnement »
     var accountPlanNone: String { t("treelab.account.plan.none", "No subscription") }
     /// « Paiement en attente : mets ta carte à jour sur la page de Stripe. »
@@ -306,7 +316,7 @@ struct AccountText: Sendable {
     /// « Effacer mes données… »
     var privacyErase: String { t("treelab.privacy.erase", "Erase my data…") }
     /// « Efface les données de Treelab et de lab sur ce Mac ; ta clé OpenAI quitte le trousseau. Deux étapes : rien ne part sans ta confirmation. »
-    var privacyEraseDetail: String { t("treelab.privacy.erase.detail", "Erases Treelab’s and lab’s data on this Mac; your OpenAI key leaves the keychain. Two steps: nothing goes without your confirmation.") }
+    var privacyEraseDetail: String { t("treelab.privacy.erase.detail", "On this Mac only: erases what lab keeps for Treelab and Ginkgo, the local copy of your account and your OpenAI key. Your projects, lanes and account stay. Two steps: nothing goes without your confirmation.") }
     /// « lab va effacer : %@ »
     func privacyEraseReadback(_ a: String) -> String {
         String(localized: "treelab.privacy.erase.readback", defaultValue: "lab will erase: \(a)", bundle: .module)

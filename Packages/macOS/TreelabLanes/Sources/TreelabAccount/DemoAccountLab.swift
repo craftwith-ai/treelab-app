@@ -6,10 +6,11 @@ public import TreelabLanes
 /// treelab account.
 ///
 /// It answers from files of a demo folder, read through ``SnapshotFileGate``:
-/// - `account`: the text of `lab app account` (contract v1); without it, lab is "the one of today"
+/// - `account`: the text of `lab app account` (contract v1.1); without it, lab is "the one of today"
 ///   and `lab app account` is an unknown command (the "next version" state);
 /// - `ginkgo`: the text of `lab app ginkgo`; `ginkgo-status`: the text of `lab ginkgo status`;
-/// - `refuse`: when present, its first line is lab's `REASON=` for every action.
+/// - `refuse`: when present, its first line is lab's `REASON=` code for every action, its second
+///   line lab's clear text on stderr (v1.1).
 ///
 /// Actions answer as the contract says, keep their effect in memory only (Ginkgo's settings, the
 /// key said present) and are written, arguments only, to `actions.log`. The key itself is never
@@ -48,8 +49,10 @@ public actor DemoAccountLab: LabCommandRunning {
             break
         }
         note(command)
-        if let reason = file("refuse")?.split(separator: "\n").first.map(String.init), !reason.isEmpty {
-            return LabCommandOutput(status: 2, standardOutput: "REASON=\(reason)\n", standardError: "lab: ERROR \(reason)\n")
+        let refusal = file("refuse")?.split(separator: "\n").map(String.init) ?? []
+        if let reason = refusal.first, !reason.isEmpty {
+            let words = refusal.count > 1 ? "lab: ERROR \(refusal[1])\n" : ""
+            return LabCommandOutput(status: 2, standardOutput: "REASON=\(reason)\n", standardError: words)
         }
         switch command {
         case .subscribe:
@@ -70,16 +73,17 @@ public actor DemoAccountLab: LabCommandRunning {
             return ok("SIGNED_OUT=all\n")
         case let .setGinkgo(setting):
             settings[setting.option] = setting.value
-            return ok(ginkgoText())
+            // v1.1: the listening mode waits for Ginkgo's next opening.
+            return ok(ginkgoText() + "APPLIES=\(setting.option == "--listen" ? "next-open" : "now")\n")
         case let .exportData(path):
             return ok("EXPORTED=\(path.value)/treelab-export\n")
         case .eraseData:
             let issued = "demo-erase-\(Int.random(in: 1000...9999))"
             token = issued
-            return ok("READBACK=\(file("erase-readback")?.split(separator: "\n").first.map(String.init) ?? "Treelab’s settings, the account session on this Mac, Ginkgo’s settings and the OpenAI key")\nTOKEN=\(issued)\n")
+            return ok("READBACK=\(file("erase-readback")?.split(separator: "\n").first.map(String.init) ?? "on this Mac only: the settings lab keeps for Ginkgo and Treelab, the account cache and the OpenAI key")\nTOKEN=\(issued)\n")
         case let .confirmErase(given):
             guard given.value == token else {
-                return LabCommandOutput(status: 2, standardOutput: "REASON=token expired\n", standardError: "lab: ERROR token expired\n")
+                return LabCommandOutput(status: 2, standardOutput: "REASON=invalid\n", standardError: "lab: ERROR the erase token has expired\n")
             }
             token = nil
             return ok("ERASED=yes\n")

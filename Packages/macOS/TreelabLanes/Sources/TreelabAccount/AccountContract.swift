@@ -1,7 +1,7 @@
 import Foundation
 public import TreelabLanes
 
-/// The account contract v1 between Treelab and lab (`contrat-compte.md`): how lab's answers are read.
+/// The account contract between Treelab and lab (`contrat-compte.md`, v1.1): how lab's answers are read.
 ///
 /// Every value is data written by lab: it is shown or compared, never executed. A value Treelab
 /// does not know stays unknown (`nil`), it is never guessed.
@@ -30,9 +30,12 @@ public enum AccountContract {
         )
         return .contract(AccountSnapshot(
             signedIn: block.first("SIGNED_IN") == "yes",
+            activation: block.first("ACTIVATION").flatMap(AccountActivation.init(rawValue:)),
             email: text(block.first("EMAIL")),
-            plan: block.first("PLAN").flatMap(AccountPlan.init(rawValue:)) ?? .none,
-            standing: block.first("STATE").flatMap(AccountStanding.init(rawValue:)) ?? .none,
+            role: block.first("ROLE").flatMap(AccountRole.init(rawValue:)),
+            plan: block.first("PLAN").flatMap(AccountPlan.init(rawValue:)),
+            period: block.first("PERIOD").flatMap(AccountPeriod.init(rawValue:)),
+            standing: block.first("STATE").flatMap(AccountStanding.init(rawValue:)),
             trialDaysLeft: count(block.first("TRIAL_DAYS_LEFT"), in: 0...3650),
             renews: block.first("RENEWS").flatMap(AccountDay.init),
             ends: block.first("ENDS").flatMap(AccountDay.init),
@@ -41,6 +44,14 @@ public enum AccountContract {
             watch: Array(block.all("WATCH").filter { $0.hasPrefix("/") && !$0.contains("\u{0}") }.prefix(8)),
             offer: offer
         ))
+    }
+
+    /// Whether a written Ginkgo setting waits for Ginkgo's next opening (`APPLIES=next-open`,
+    /// v1.1: the listening mode) rather than applying now.
+    /// - Parameter output: what `lab app ginkgo --listen|--speak|--quiet` returned.
+    /// - Returns: `true` for `next-open` only.
+    public static func appliesAtNextOpen(_ output: LabCommandOutput) -> Bool {
+        block(of: output).first("APPLIES") == "next-open"
     }
 
     /// Reads `lab app ginkgo`, or the answer of `lab app ginkgo --listen|--speak|--quiet`.

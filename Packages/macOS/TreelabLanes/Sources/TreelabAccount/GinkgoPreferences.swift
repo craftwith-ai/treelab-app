@@ -43,15 +43,6 @@ public enum QuietSetting: Sendable, Equatable {
         self = .hours(from: parts[0], to: parts[1])
     }
 
-    /// Quiet hours from `from` to `to`.
-    /// - Parameters:
-    ///   - from: `HH:MM`.
-    ///   - to: `HH:MM`.
-    /// - Returns: `nil` unless both are `HH:MM`.
-    public init?(from: String, to: String) {
-        self.init("\(from)-\(to)")
-    }
-
     /// The value given to `lab app ginkgo --quiet`.
     public var argument: String {
         switch self {

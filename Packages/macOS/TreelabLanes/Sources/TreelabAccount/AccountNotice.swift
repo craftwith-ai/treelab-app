@@ -43,6 +43,8 @@ public enum AccountNotice: Sendable, Equatable {
     case keyStored
     /// A setting of Ginkgo was saved.
     case saved
+    /// A setting of Ginkgo was saved; Ginkgo takes it the next time it opens (`APPLIES=next-open`).
+    case savedForNextOpen
     /// lab wrote the export there.
     case exported(path: String)
     /// The local data was erased.

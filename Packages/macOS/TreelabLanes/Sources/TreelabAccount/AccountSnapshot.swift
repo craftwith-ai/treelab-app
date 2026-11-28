@@ -1,16 +1,42 @@
 public import Foundation
 
-/// The plan of the account (`PLAN=`).
+/// The plan of the account (`PLAN=`, contract v1.1).
 public enum AccountPlan: String, Sendable, Equatable, CaseIterable {
     /// The free trial.
     case trial
+    /// A paid subscription, by the month or the year (``AccountPeriod``).
+    case subscription
+    /// A right without end (a one-time purchase, a pilot key): nothing more to pay.
+    case lifetime
+    /// A licence is there, its rights not read yet by lab.
+    case unknown
+    /// No plan.
+    case none
+}
+
+/// How a subscription is paid (`PERIOD=`, empty until the accounts).
+public enum AccountPeriod: String, Sendable, Equatable, CaseIterable {
     /// Paid by the month.
-    case monthly
+    case month
     /// Paid by the year.
-    case yearly
-    /// treelab's owner: nothing to pay.
+    case year
+}
+
+/// The person's role in the account (`ROLE=`, empty without an account).
+public enum AccountRole: String, Sendable, Equatable, CaseIterable {
+    /// Manages the billing.
     case owner
-    /// No plan (signed out, or never subscribed).
+    /// Invited: the team pays the seat.
+    case member
+}
+
+/// What activates this Mac (`ACTIVATION=`).
+public enum AccountActivation: String, Sendable, Equatable, CaseIterable {
+    /// A licence key.
+    case key
+    /// The signed-in account.
+    case account
+    /// Nothing.
     case none
 }
 
@@ -22,9 +48,11 @@ public enum AccountStanding: String, Sendable, Equatable, CaseIterable {
     case trial
     /// The trial or the subscription has ended.
     case ended
-    /// A payment failed.
+    /// A payment failed (with the accounts).
     case unpaid
-    /// Nothing to say (signed out).
+    /// Not read yet by lab.
+    case unknown
+    /// Nothing to say.
     case none
 }
 
@@ -104,21 +132,25 @@ public struct AccountOffer: Sendable, Equatable {
 
     /// Whether both prices and their currency are known, so they can be shown.
     public var isComplete: Bool { month != nil && year != nil && currency != nil }
-
-    /// Whether the team discount is known.
-    public var hasDiscount: Bool { discountPercent != nil && discountFromSeats != nil }
 }
 
-/// What `lab app account` says, once it speaks the contract (`PROTOCOL=1`).
+/// What `lab app account` says, once it speaks the contract (`PROTOCOL=1`, v1.1). A value lab
+/// leaves empty, or one this Treelab does not know, is `nil`: never guessed.
 public struct AccountSnapshot: Sendable, Equatable {
-    /// Whether this Mac is signed in (`SIGNED_IN=yes`).
+    /// Whether this Mac is signed in (`SIGNED_IN=yes`); `no` until the accounts exist.
     public var signedIn: Bool
+    /// What activates this Mac (`ACTIVATION=`).
+    public var activation: AccountActivation?
     /// The account's e-mail (`EMAIL=`), shown only.
     public var email: String?
-    /// The plan.
-    public var plan: AccountPlan
-    /// Where the account stands.
-    public var standing: AccountStanding
+    /// The person's role (`ROLE=`).
+    public var role: AccountRole?
+    /// The plan (`PLAN=`).
+    public var plan: AccountPlan?
+    /// How the subscription is paid (`PERIOD=`).
+    public var period: AccountPeriod?
+    /// Where the account stands (`STATE=`).
+    public var standing: AccountStanding?
     /// Days left in the trial (`TRIAL_DAYS_LEFT=`).
     public var trialDaysLeft: Int?
     /// When the subscription renews (`RENEWS=`).
@@ -127,22 +159,26 @@ public struct AccountSnapshot: Sendable, Equatable {
     public var ends: AccountDay?
     /// The seats of the subscription (`SEATS=`), one per Mac.
     public var seats: Int?
-    /// When lab last checked with treelab, UTC (`CHECKED=`).
+    /// When lab last checked the rights, UTC (`CHECKED=`).
     public var checked: String?
     /// The files lab rewrites when the account changes (`WATCH=`), absolute paths.
     public var watch: [String]
-    /// treelab's offer.
+    /// treelab's offer (`OFFER_*`, absent when lab lacks its offer file).
     public var offer: AccountOffer
 
     /// Creates a snapshot; signed out and empty by default.
     public init(
-        signedIn: Bool = false, email: String? = nil, plan: AccountPlan = .none, standing: AccountStanding = .none,
+        signedIn: Bool = false, activation: AccountActivation? = nil, email: String? = nil, role: AccountRole? = nil,
+        plan: AccountPlan? = AccountPlan.none, period: AccountPeriod? = nil, standing: AccountStanding? = AccountStanding.none,
         trialDaysLeft: Int? = nil, renews: AccountDay? = nil, ends: AccountDay? = nil, seats: Int? = nil,
         checked: String? = nil, watch: [String] = [], offer: AccountOffer = AccountOffer()
     ) {
         self.signedIn = signedIn
+        self.activation = activation
         self.email = email
+        self.role = role
         self.plan = plan
+        self.period = period
         self.standing = standing
         self.trialDaysLeft = trialDaysLeft
         self.renews = renews
@@ -153,12 +189,12 @@ public struct AccountSnapshot: Sendable, Equatable {
         self.offer = offer
     }
 
-    /// Whether the account is subscribed or the owner's: "Manage" rather than "Subscribe".
+    /// Whether the account is subscribed or has a lifetime licence: "Manage" rather than "Subscribe".
     public var isSubscribed: Bool {
         switch plan {
-        case .monthly, .yearly: standing != .ended
-        case .owner: true
-        case .trial, .none: false
+        case .subscription: standing != .ended
+        case .lifetime: true
+        case .trial, .unknown, .some(.none), nil: false
         }
     }
 }

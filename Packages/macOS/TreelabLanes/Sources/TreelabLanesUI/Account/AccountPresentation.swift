@@ -11,19 +11,25 @@ struct AccountPresentation: Sendable {
         self.locale = locale
     }
 
-    /// The second line of the account entry at the bottom of the sidebar.
+    /// The second line of the account entry at the bottom of the sidebar: the plan first, since a
+    /// Mac activated by a licence key is not signed in before the accounts (v1.1).
     func barLine(_ status: AccountStatus) -> String {
         guard case let .contract(account) = status else { return text.accountBarSettings }
-        guard account.signedIn else { return text.accountBarSignedOut }
-        switch (account.plan, account.standing) {
-        case (_, .unpaid): return text.accountBarUnpaid
-        case (.owner, _): return text.accountBarOwner
-        case (.trial, .ended): return text.accountBarTrialEnded
-        case (.trial, _): return account.trialDaysLeft.map(text.accountBarTrialDays) ?? text.accountBarTrial
-        case (.monthly, .ended), (.yearly, .ended): return text.accountBarEnded
-        case (.monthly, _): return text.accountBarMonthly
-        case (.yearly, _): return text.accountBarYearly
-        case (.none, _): return text.accountBarSignedOut
+        if account.standing == .unpaid { return text.accountBarUnpaid }
+        switch account.plan {
+        case .lifetime: return text.accountBarLifetime
+        case .subscription:
+            if account.standing == .ended { return text.accountBarEnded }
+            switch account.period {
+            case .month: return text.accountBarMonthly
+            case .year: return text.accountBarYearly
+            case nil: return text.accountBarSubscription
+            }
+        case .trial:
+            if account.standing == .ended { return text.accountBarTrialEnded }
+            return account.trialDaysLeft.map(text.accountBarTrialDays) ?? text.accountBarTrial
+        case .unknown, nil: return text.accountBarUnknown
+        case .some(.none): return account.signedIn ? text.accountBarNone : text.accountBarSignedOut
         }
     }
 
@@ -34,17 +40,51 @@ struct AccountPresentation: Sendable {
         case .trial:
             if account.standing == .ended { return (text.accountPlanTrialEnded, nil) }
             return (text.accountPlanTrial, account.trialDaysLeft.map(text.accountPlanDaysLeft))
-        case .monthly, .yearly:
+        case .subscription:
             if account.standing == .ended {
                 return (text.accountPlanEnded, account.ends.flatMap(day).map(text.accountPlanEnds))
             }
-            let title = account.plan == .monthly ? text.accountPlanMonthly : text.accountPlanYearly
+            let title = switch account.period {
+            case .month: text.accountPlanMonthly
+            case .year: text.accountPlanYearly
+            case nil: text.accountPlanSubscription
+            }
             if let renews = account.renews.flatMap(day) { return (title, text.accountPlanRenews(renews)) }
             return (title, account.ends.flatMap(day).map(text.accountPlanEnds))
-        case .owner:
-            return (text.accountPlanOwner, nil)
-        case .none:
+        case .lifetime:
+            return (text.accountPlanLifetime, nil)
+        case .unknown, nil:
+            return (text.accountPlanUnknown, text.accountPlanUnknownDetail)
+        case .some(.none):
             return (text.accountPlanNone, nil)
+        }
+    }
+
+    /// Who pays the seat, when the team does (`ROLE=member`).
+    func roleLine(_ account: AccountSnapshot) -> String? {
+        account.role == .member ? text.accountPlanMember : nil
+    }
+
+    /// The title of a section's card when lab cannot give the account: lab missing, or a lab
+    /// before the contract. `nil` otherwise.
+    func unavailableTitle(_ status: AccountStatus) -> String? {
+        switch status {
+        case .labMissing: text.settingsLabMissingTitle
+        case .nextVersion: text.settingsNextVersionTitle
+        case .unknown, .contract: nil
+        }
+    }
+
+    /// The note under a setting or a step that needs the contract: lab missing is said as such,
+    /// never as the next treelab version. `nil` while reading or when lab speaks the contract.
+    /// - Parameters:
+    ///   - status: where the account stands.
+    ///   - nextVersion: what to say for a lab before the contract.
+    func unavailableNote(_ status: AccountStatus, nextVersion: String) -> String? {
+        switch status {
+        case .labMissing: text.settingsLabMissing
+        case .nextVersion: nextVersion
+        case .unknown, .contract: nil
         }
     }
 
@@ -88,6 +128,7 @@ struct AccountPresentation: Sendable {
             }
         case .keyStored: (text.accountNoticeKeyStored, false)
         case .saved: (text.accountNoticeSaved, false)
+        case .savedForNextOpen: (text.accountNoticeSavedNextOpen, false)
         case let .exported(path): (text.accountNoticeExported((path as NSString).lastPathComponent), false)
         case .erased: (text.accountNoticeErased, false)
         case let .refused(reason): (text.accountNoticeRefused(reason), true)

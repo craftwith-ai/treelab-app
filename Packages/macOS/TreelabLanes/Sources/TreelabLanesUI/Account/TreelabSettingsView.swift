@@ -163,15 +163,12 @@ struct AccountUnavailableCard: View {
     private let text = AccountText()
 
     var body: some View {
-        switch model.status {
-        case .labMissing:
-            HUDCard(title: text.settingsNextVersionTitle, accent: palette.amber) { HUDNote(text: text.settingsLabMissing, color: palette.text) }
-        case .unknown:
+        let presentation = AccountPresentation()
+        if model.status == .unknown {
             HUDNote(text: text.settingsReading)
-        case .nextVersion:
-            HUDCard(title: text.settingsNextVersionTitle, accent: palette.amber) { HUDNote(text: message, color: palette.text) }
-        case .contract:
-            EmptyView()
+        } else if let title = presentation.unavailableTitle(model.status),
+                  let note = presentation.unavailableNote(model.status, nextVersion: message) {
+            HUDCard(title: title, accent: palette.amber) { HUDNote(text: note, color: palette.text) }
         }
     }
 }
@@ -254,6 +251,7 @@ private struct AccountCard: View {
                 HUDNote(text: text.accountSignOutEverywhereDetail)
             } else {
                 Text(text.accountSignedOut).font(.system(size: size.body, weight: .semibold))
+                if account.activation == .key { HUDNote(text: text.accountActivationKey, color: palette.cyan) }
                 SignInForm(model: model, email: $email, button: text.accountSendLink)
                 HUDNote(text: account.offer.trialDays.map(text.accountSignInDetailDays) ?? text.accountSignInDetail)
             }
@@ -325,6 +323,7 @@ struct SubscriptionCard: View {
                         Text(detail).font(.system(size: size.body, weight: .medium))
                             .foregroundStyle(account.plan == .trial ? palette.cyan : palette.textSecondary)
                     }
+                    if let role = presentation.roleLine(account) { HUDNote(text: role) }
                 }
                 if !account.isSubscribed {
                     if account.plan == .trial { HUDNote(text: text.accountTrialNoCharge) }
@@ -453,12 +452,11 @@ private struct LeavesCard: View {
 /// The three listening modes, "On click" by default.
 struct ListeningChoices: View {
     let model: AccountModel
-    /// The choice kept by the welcome while lab cannot save it yet.
-    var local: Binding<GinkgoListening>? = nil
     private let text = AccountText()
 
     var body: some View {
-        let current = model.speaksContract ? (model.ginkgo.listen ?? .standard) : (local?.wrappedValue ?? .standard)
+        // Chosen through lab only: without the contract nothing is kept aside, since it would never reach lab.
+        let current = model.ginkgo.listen ?? .standard
         VStack(alignment: .leading, spacing: 8) {
             ForEach(GinkgoListening.allCases, id: \.self) { mode in
                 HUDChoiceRow(
@@ -467,15 +465,13 @@ struct ListeningChoices: View {
                     detail: detail(mode),
                     isSelected: current == mode
                 ) {
-                    if model.speaksContract {
-                        Task { await model.setListening(mode) }
-                    } else if let local {
-                        local.wrappedValue = mode
-                    }
+                    Task { await model.setListening(mode) }
                 }
-                .disabled(model.isBusy || (!model.speaksContract && local == nil))
+                .disabled(model.isBusy || !model.speaksContract)
             }
-            if !model.speaksContract { HUDNote(text: text.settingsNextVersionSetting, color: HUDPalette().amber) }
+            if let note = AccountPresentation().unavailableNote(model.status, nextVersion: text.settingsNextVersionSetting) {
+                HUDNote(text: note, color: HUDPalette().amber)
+            }
         }
     }
 
@@ -529,7 +525,7 @@ struct SpeechCard: View {
     }
 
     let model: AccountModel
-    @State private var quietOn = true
+    @State private var quietOn = false
     @State private var from = SpeechCard.time("21:00")
     @State private var to = SpeechCard.time("08:00")
     @Environment(\.accountScreenSize) private var size
@@ -552,13 +548,19 @@ struct SpeechCard: View {
                 }
             }
             .disabled(!enabled)
-            Toggle(text.privacyQuiet, isOn: $quietOn)
+            // Only the person's switch sends "off", and only when lab has hours; lab's answer, a
+            // refusal included, is shown again.
+            Toggle(text.privacyQuiet, isOn: Binding(get: { quietOn }, set: { on in
+                quietOn = on
+                guard !on, case .hours = model.ginkgo.quiet else { return }
+                Task {
+                    await model.setQuiet("off")
+                    load()
+                }
+            }))
                 .toggleStyle(.switch)
                 .font(.system(size: size.body, weight: .semibold))
                 .disabled(!enabled)
-                .onChange(of: quietOn) { _, on in
-                    if !on, model.ginkgo.quiet != .off { Task { await model.setQuiet("off") } }
-                }
             if quietOn {
                 HStack(spacing: 8) {
                     Text(text.privacyQuietFrom).font(.system(size: size.body))
@@ -570,26 +572,36 @@ struct SpeechCard: View {
                 .disabled(!enabled)
                 Button(text.privacyQuietSave) {
                     let range = "\(Self.clock(from))-\(Self.clock(to))"
-                    Task { await model.setQuiet(range) }
+                    Task {
+                        await model.setQuiet(range)
+                        load()
+                    }
                 }
                 .buttonStyle(HUDSecondaryButtonStyle())
                 .disabled(!enabled)
                 HUDNote(text: text.privacyQuietDetail)
             }
-            if !model.speaksContract { HUDNote(text: text.settingsNextVersionSetting, color: palette.amber) }
+            if let note = AccountPresentation().unavailableNote(model.status, nextVersion: text.settingsNextVersionSetting) {
+                HUDNote(text: note, color: palette.amber)
+            }
         }
         .onAppear(perform: load)
         .onChange(of: model.ginkgo) { load() }
     }
 
     private func load() {
-        switch model.ginkgo.quiet {
-        case .off: quietOn = false
-        case let .hours(start, end):
-            quietOn = true
-            from = Self.time(start)
-            to = Self.time(end)
-        case nil: break
+        let form = Self.form(for: model.ginkgo.quiet)
+        quietOn = form.isOn
+        from = Self.time(form.from)
+        to = Self.time(form.to)
+    }
+
+    /// What the quiet-hours row shows of lab's setting: on with lab's hours only when lab has
+    /// hours; off, or not known, shows the switch off (the hours offered are a proposal to save).
+    nonisolated static func form(for setting: QuietSetting?) -> QuietHoursForm {
+        switch setting {
+        case let .hours(start, end): QuietHoursForm(isOn: true, from: start, to: end)
+        case .off, nil: QuietHoursForm(isOn: false, from: "21:00", to: "08:00")
         }
     }
 
@@ -613,6 +625,13 @@ struct SpeechCard: View {
         let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
         return String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
     }
+}
+
+/// The quiet-hours row: the switch and the two times.
+struct QuietHoursForm: Equatable {
+    var isOn: Bool
+    var from: String
+    var to: String
 }
 
 /// YOUR OPENAI KEY: present or absent only, never shown; replaced through lab, on standard input.
@@ -727,7 +746,9 @@ private struct DataCard: View {
                     .disabled(!enabled)
             }
             HUDNote(text: text.privacyEraseDetail)
-            if !model.speaksContract { HUDNote(text: text.settingsNextVersionSetting, color: palette.amber) }
+            if let note = AccountPresentation().unavailableNote(model.status, nextVersion: text.settingsNextVersionSetting) {
+                HUDNote(text: note, color: palette.amber)
+            }
         }
     }
 

@@ -261,8 +261,10 @@ private struct TrialStep: View {
         HUDNote(text: text.welcomeTrialNoCard, color: palette.text)
         HUDCard(title: text.accountCardAccount) {
             switch model.status {
-            case let .contract(account) where account.signedIn:
-                Text(text.welcomeTrialSignedIn(account.email ?? "—")).font(.system(size: size.body, weight: .semibold))
+            case let .contract(account) where account.signedIn || account.activation == .key:
+                // A Mac activated by a licence key is not signed in before the accounts (v1.1).
+                Text(account.signedIn ? text.welcomeTrialSignedIn(account.email ?? "—") : text.accountActivationKey)
+                    .font(.system(size: size.body, weight: .semibold))
                 let plan = presentation.plan(account)
                 Text(plan.detail.map { "\(plan.title) · \($0)" } ?? plan.title)
                     .font(.system(size: size.body)).foregroundStyle(palette.cyan)
@@ -271,7 +273,9 @@ private struct TrialStep: View {
             case .unknown:
                 HUDNote(text: text.settingsReading)
             case .nextVersion, .labMissing:
-                HUDNote(text: text.welcomeTrialNextVersion, color: palette.amber)
+                if let note = presentation.unavailableNote(model.status, nextVersion: text.welcomeTrialNextVersion) {
+                    HUDNote(text: note, color: palette.amber)
+                }
             }
             if let offer, offer.isComplete, let month = presentation.price(offer.month, currency: offer.currency),
                let year = presentation.price(offer.year, currency: offer.currency) {
@@ -286,7 +290,6 @@ private struct TrialStep: View {
 /// Step 3: Ginkgo — the OpenAI key on standard input, the microphone and its reason, the listening mode.
 private struct GinkgoStep: View {
     let model: AccountModel
-    @State private var listening = GinkgoListening.standard
     @Environment(\.accountScreenSize) private var size
     private let palette = HUDPalette()
     private let text = AccountText()
@@ -300,7 +303,7 @@ private struct GinkgoStep: View {
             HUDNote(text: text.welcomeGinkgoMic, color: palette.text)
         }
         HUDCard(title: text.welcomeGinkgoListenTitle) {
-            ListeningChoices(model: model, local: $listening)
+            ListeningChoices(model: model)
         }
     }
 }

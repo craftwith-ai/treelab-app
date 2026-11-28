@@ -5,7 +5,7 @@ public import TreelabLanes
 /// What the welcome and the settings observe: the account, Ginkgo's settings and whether the
 /// OpenAI key is stored, all read from lab; and the person's actions, all done by lab.
 ///
-/// Treelab speaks the account contract v1 only when lab says `PROTOCOL=1`; otherwise the account
+/// Treelab speaks the account contract (v1.1) only when lab says `PROTOCOL=1`; otherwise the account
 /// comes with the next treelab version and nothing is launched, except what already works
 /// (`lab subscribe`, the OpenAI key). A new reading is woken by the `WATCH=` file lab rewrites
 /// (a temporary file, then a rename): its folder's entries are watched by the kernel, and only a
@@ -268,7 +268,7 @@ public final class AccountModel {
         } else {
             expected(&ginkgo)
         }
-        notice = .saved
+        notice = AccountContract.appliesAtNextOpen(output) ? .savedForNextOpen : .saved
     }
 
     // MARK: Data
