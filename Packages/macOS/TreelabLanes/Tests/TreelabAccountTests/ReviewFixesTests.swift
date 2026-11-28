@@ -32,6 +32,15 @@ func refusedV11(_ code: String, _ text: String) -> LabCommandOutput {
 @Suite("Review fixes: refusals, one action at a time, the WATCH= folder")
 @MainActor
 struct AccountReviewFixesTests {
+    @Test("a lab with PROTOCOL=1 that does not know the command (code 2, no REASON=, its usage on stderr) is the next treelab version")
+    func unknownCommandUnderProtocolIsNextVersion() {
+        // What lab 1.8.4 answers to `lab app data --export …`, measured on 2026-11-28.
+        let unknown = LabCommandOutput(status: 2, standardOutput: "", standardError: "usage: lab <command> [options]\n  app account …\nDetails: lab help app\n")
+        #expect(AccountContract.refusal(of: unknown) == .unsupported)
+        // A refusal that names its code stays said, as before.
+        #expect(AccountContract.refusal(of: refusedV11("invalid", "an empty quiet range is refused")) != .unsupported)
+    }
+
     @Test("v1.1: REASON=unsupported (sign-in, sign-out before the accounts) is the next treelab version")
     func unsupportedIsNextVersion() async {
         let lab = currentLab { command in
