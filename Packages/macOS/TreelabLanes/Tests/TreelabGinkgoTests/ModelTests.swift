@@ -467,6 +467,31 @@ struct ModelTests {
         #expect(await eventually { ginkgo.microphone == .off })
     }
 
+    @Test("closed with `mic: true`, as the real Ginkgo 1.8.4 says it (switch of `mic {on}`, nothing heard): microphone off (C9)")
+    func closedWithMicrophoneAllowed() async throws {
+        let fake = try FakeGinkgo()
+        let ginkgo = model(fake, lab: nil)
+        ginkgo.setKeepActive(true)
+        ginkgo.start()
+        // Ginkgo 1.8.4 in the background, command mode: snapshot `closed` with `mic: true` (probe, 2026-11-28).
+        fake.greet(state: "closed", mic: true)
+        #expect(await eventually { ginkgo.session.mic && ginkgo.session.version == "2.0.0" })
+        #expect(!ginkgo.isMicrophoneOpen)
+        #expect(ginkgo.microphone == .off)
+        fake.event("state", "\"state\":\"listening\",\"mic\":true")
+        #expect(await eventually { ginkgo.microphone == .conversation })
+        // `close`: the conversation ends, the switch stays on.
+        fake.event("state", "\"state\":\"closed\",\"mic\":true")
+        #expect(await eventually { ginkgo.session.state == .closed })
+        #expect(!ginkgo.isMicrophoneOpen)
+        #expect(ginkgo.microphone == .off)
+        // Name mode: Ginkgo listens for its name, on the Mac; `mic {on:false}` cuts that too.
+        fake.event("state", "\"state\":\"name_listening\",\"mic\":true")
+        #expect(await eventually { ginkgo.microphone == .name })
+        fake.event("state", "\"state\":\"name_listening\",\"mic\":false")
+        #expect(await eventually { ginkgo.microphone == .off })
+    }
+
     @Test("a click while Ginkgo starts in the background opens the conversation once connected (R7)")
     func clickDuringBackgroundStart() async throws {
         let fake = try FakeGinkgo()
